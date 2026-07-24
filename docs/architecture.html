@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cantina — Architecture</title>
+<style>
+  :root {
+    --bg: #f7f3ec;
+    --panel: #ffffff;
+    --ink: #2b2622;
+    --muted: #6f655b;
+    --line: #e3d9c9;
+    --wine: #6e2233;
+    --wine-soft: #8a3a4c;
+    --grape: #4a3b52;
+    --leaf: #5a6b45;
+    --accent-bg: #f0e7da;
+    --shadow: 0 1px 2px rgba(43, 38, 34, .06), 0 8px 24px rgba(43, 38, 34, .06);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(160deg, #6e2233 0%, #4a3b52 100%);
+    color: #f7f3ec;
+    padding: 3rem 1.5rem 2.4rem;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0 0 .3rem;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    font-weight: 600;
+    letter-spacing: .5px;
+  }
+  header p {
+    margin: 0 auto;
+    max-width: 46rem;
+    color: #e7dccb;
+    font-size: 1.02rem;
+  }
+  .lang-switch {
+    display: inline-flex;
+    gap: .25rem;
+    margin-top: 1.4rem;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 999px;
+    padding: .25rem;
+  }
+  .lang-switch button {
+    border: 0;
+    background: transparent;
+    color: #f2e9db;
+    font: inherit;
+    font-size: .9rem;
+    padding: .35rem .95rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .lang-switch button[aria-pressed="true"] {
+    background: #f7f3ec;
+    color: var(--wine);
+    font-weight: 600;
+  }
+  main {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 2.4rem 1.5rem 4rem;
+  }
+  section { margin-bottom: 2.6rem; }
+  h2 {
+    font-size: 1.4rem;
+    color: var(--wine);
+    border-bottom: 2px solid var(--line);
+    padding-bottom: .4rem;
+    margin: 0 0 1rem;
+  }
+  h3 { font-size: 1.08rem; color: var(--grape); margin: 1.4rem 0 .4rem; }
+  p { margin: .5rem 0; }
+  .muted { color: var(--muted); }
+  code {
+    background: var(--accent-bg);
+    padding: .1rem .35rem;
+    border-radius: 4px;
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: .9em;
+    color: var(--wine-soft);
+  }
+  .pipeline {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: stretch;
+    gap: .6rem;
+    margin: 1.4rem 0;
+  }
+  @media (max-width: 720px) {
+    .pipeline { grid-template-columns: 1fr; }
+    .pipeline .arrow { transform: rotate(90deg); }
+  }
+  .stage {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--wine);
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .stage.harvest { border-top-color: var(--leaf); }
+  .stage.distil { border-top-color: var(--wine); }
+  .stage.visualise { border-top-color: var(--grape); }
+  .stage h4 { margin: 0 0 .3rem; font-size: 1.05rem; }
+  .stage .sub { font-size: .82rem; color: var(--muted); }
+  .stage .tag {
+    display: inline-block;
+    margin-top: .55rem;
+    font-size: .72rem;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--wine-soft);
+    background: var(--accent-bg);
+    border-radius: 999px;
+    padding: .15rem .6rem;
+  }
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 1.4rem;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+    box-shadow: var(--shadow);
+  }
+  .card h3 { margin-top: 0; }
+  .card .wine-term {
+    font-size: .8rem;
+    color: var(--wine-soft);
+    font-style: italic;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  th, td {
+    text-align: left;
+    padding: .6rem .8rem;
+    border-bottom: 1px solid var(--line);
+    font-size: .92rem;
+    vertical-align: top;
+  }
+  th { background: var(--accent-bg); color: var(--grape); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  ul { margin: .5rem 0; padding-left: 1.2rem; }
+  li { margin: .25rem 0; }
+  .callout {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--wine);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    box-shadow: var(--shadow);
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: .85rem;
+    padding: 2rem 1.5rem 3rem;
+    border-top: 1px solid var(--line);
+  }
+  .lang-en .only-it, .lang-it .only-en { display: none; }
+</style>
+</head>
+<body class="lang-en">
+
+<header>
+  <h1>Cantina</h1>
+  <p class="only-en">Network Configuration Assessment Toolchain — a Java suite from the early 2000s that harvests, distils, and visualises large corporate networks.</p>
+  <p class="only-it">Toolchain per la valutazione delle configurazioni di rete — una suite Java dei primi anni 2000 che raccoglie, distilla e visualizza grandi reti aziendali.</p>
+  <div class="lang-switch" role="group" aria-label="Language">
+    <button type="button" data-lang="en" aria-pressed="true">English</button>
+    <button type="button" data-lang="it" aria-pressed="false">Italiano</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ OVERVIEW ============ -->
+  <section>
+    <h2><span class="only-en">The idea</span><span class="only-it">L'idea</span></h2>
+    <p class="only-en">
+      The task was to assess the quality of large corporate networks: connect to every device,
+      download its configuration, run diagnostic commands, and spot mistakes — one device at a time,
+      by hand. This toolchain automates the tedious part, producing a <strong>semi-finished report</strong>
+      an engineer can refine with high-level judgement.
+    </p>
+    <p class="only-it">
+      L'obiettivo era valutare la qualità di grandi reti aziendali: connettersi a ogni dispositivo,
+      scaricarne la configurazione, eseguire comandi diagnostici e individuare gli errori — un dispositivo
+      alla volta, a mano. Questa toolchain automatizza la parte noiosa, producendo un
+      <strong>report semilavorato</strong> che l'ingegnere può rifinire con il proprio giudizio.
+    </p>
+    <p class="only-en muted">
+      The modules are named after winemaking: you harvest the raw material, you distil it, and you
+      obtain something refined and ready to be tasted by an expert.
+    </p>
+    <p class="only-it muted">
+      I moduli prendono il nome dalla vinificazione: si raccoglie la materia prima, la si distilla e si
+      ottiene qualcosa di raffinato, pronto per essere valutato da un esperto.
+    </p>
+  </section>
+
+  <!-- ============ PIPELINE ============ -->
+  <section>
+    <h2><span class="only-en">The pipeline</span><span class="only-it">La pipeline</span></h2>
+    <div class="pipeline">
+      <div class="stage harvest">
+        <h4>vendemmiatore</h4>
+        <div class="sub only-en"><em>the vintager</em> — harvest</div>
+        <div class="sub only-it"><em>il vendemmiatore</em> — raccolta</div>
+        <div class="tag">vinaccia</div>
+      </div>
+      <div class="arrow">&#10142;</div>
+      <div class="stage distil">
+        <h4>distillatore</h4>
+        <div class="sub only-en"><em>the distiller</em> — analysis</div>
+        <div class="sub only-it"><em>il distillatore</em> — analisi</div>
+        <div class="tag">grappa</div>
+      </div>
+      <div class="arrow">&#10142;</div>
+      <div class="stage visualise">
+        <h4>Topology</h4>
+        <div class="sub only-en">visualisation</div>
+        <div class="sub only-it">visualizzazione</div>
+        <div class="tag">SVG</div>
+      </div>
+    </div>
+    <ol class="only-en">
+      <li><strong>Harvest</strong> — connect to each device over telnet, run diagnostic commands, follow neighbour discovery to walk the whole network, and store the raw output as the <code>vinaccia</code> archive.</li>
+      <li><strong>Distil</strong> — parse each file with regular expressions, extract the key parameters, cluster configurations by structural similarity, build the connectivity graph, and generate the <code>grappa</code> reports.</li>
+      <li><strong>Visualise</strong> — compute centrality over the network graph and render an SVG diagram with a ranked device list.</li>
+    </ol>
+    <ol class="only-it">
+      <li><strong>Raccolta</strong> — connessione a ogni dispositivo via telnet, esecuzione dei comandi diagnostici, scoperta dei vicini per percorrere l'intera rete e salvataggio dell'output grezzo come archivio <code>vinaccia</code>.</li>
+      <li><strong>Distillazione</strong> — parsing di ogni file con espressioni regolari, estrazione dei parametri chiave, clustering delle configurazioni per similarità strutturale, costruzione del grafo di connettività e generazione dei report <code>grappa</code>.</li>
+      <li><strong>Visualizzazione</strong> — calcolo della centralità sul grafo di rete e rendering di un diagramma SVG con l'elenco ordinato dei dispositivi.</li>
+    </ol>
+  </section>
+
+  <!-- ============ MODULES ============ -->
+  <section>
+    <h2><span class="only-en">The modules</span><span class="only-it">I moduli</span></h2>
+    <div class="cards">
+
+      <div class="card">
+        <h3>vendemmiatore</h3>
+        <div class="wine-term only-en">the harvesting module → produces the <strong>vinaccia</strong></div>
+        <div class="wine-term only-it">il modulo di raccolta → produce la <strong>vinaccia</strong></div>
+        <p class="only-en">Connects to the network through the text-based interface, starts from one device, discovers its neighbours, and walks the entire network, downloading every configuration and diagnostic file.</p>
+        <p class="only-it">Si connette alla rete tramite l'interfaccia testuale, parte da un dispositivo, scopre i vicini e percorre l'intera rete, scaricando ogni file di configurazione e diagnostica.</p>
+        <p class="muted only-en"><strong>Key parts:</strong> telnet client (Apache ORO), neighbour discovery walker, connection-token pool, harvesting threads.</p>
+        <p class="muted only-it"><strong>Parti chiave:</strong> client telnet (Apache ORO), walker di scoperta dei vicini, pool di token di connessione, thread di raccolta.</p>
+      </div>
+
+      <div class="card">
+        <h3>distillatore</h3>
+        <div class="wine-term only-en">the analysis module → produces the <strong>grappa</strong></div>
+        <div class="wine-term only-it">il modulo di analisi → produce la <strong>grappa</strong></div>
+        <p class="only-en">Takes the <code>vinaccia</code> as input and produces summary documents in HTML. Built around the regular-expressions framework to turn messy text into structured, human-readable reports.</p>
+        <p class="only-it">Prende la <code>vinaccia</code> in ingresso e produce documenti riassuntivi in HTML. Costruito attorno al framework delle espressioni regolari per trasformare testo disordinato in report strutturati e leggibili.</p>
+        <p class="muted only-en"><strong>Key parts:</strong> regex parsing engine, per-device extractor, config clustering forest, connectivity graph, HTML/text report builders.</p>
+        <p class="muted only-it"><strong>Parti chiave:</strong> motore di parsing regex, estrattore per dispositivo, "foresta" di clustering, grafo di connettività, generatori di report HTML/testo.</p>
+      </div>
+
+      <div class="card">
+        <h3>Topology</h3>
+        <div class="wine-term only-en">the visualiser → produces an <strong>SVG</strong> diagram</div>
+        <div class="wine-term only-it">il visualizzatore → produce un diagramma <strong>SVG</strong></div>
+        <p class="only-en">From the discovered network it computes node centrality (shortest-path distances) and renders an SVG diagram, plus an HTML list of devices ranked by centrality.</p>
+        <p class="only-it">Dalla rete scoperta calcola la centralità dei nodi (distanze di cammino minimo) e produce un diagramma SVG, oltre a un elenco HTML dei dispositivi ordinati per centralità.</p>
+        <p class="muted only-en"><strong>Key parts:</strong> in-memory graph, shortest-path convergence, centrality ranking, polar SVG layout.</p>
+        <p class="muted only-it"><strong>Parti chiave:</strong> grafo in memoria, convergenza dei cammini minimi, classifica di centralità, layout polare SVG.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ CLUSTERING ============ -->
+  <section>
+    <h2><span class="only-en">The heart: cluster analysis</span><span class="only-it">Il cuore: la cluster analysis</span></h2>
+    <div class="callout">
+      <p class="only-en">
+        The most valuable part of the <code>grappa</code> was a <strong>cluster analysis</strong> of the device
+        configurations. The distiller compared configurations across all devices and grouped them into clusters of
+        similar ones. Similarity was not a naive text comparison: it was a structured function, built on regular
+        expressions, that <strong>ignored the parts that legitimately differ</strong> (such as specific IP addresses)
+        and focused on the structural shape of the configuration.
+      </p>
+      <p class="only-it">
+        La parte più preziosa della <code>grappa</code> era una <strong>cluster analysis</strong> delle configurazioni
+        dei dispositivi. Il distillatore confrontava le configurazioni di tutti i dispositivi e le raggruppava in cluster
+        di configurazioni simili. La similarità non era un banale confronto tra stringhe: era una funzione strutturata,
+        basata su espressioni regolari, che <strong>ignorava le parti che legittimamente differiscono</strong> (come gli
+        specifici indirizzi IP) e si concentrava sulla forma strutturale della configurazione.
+      </p>
+      <p class="only-en muted">
+        With the clusters in hand, an engineer no longer had to inspect every file individually — they could focus on
+        the few distinct clusters that emerged, making mistakes far easier to spot.
+      </p>
+      <p class="only-it muted">
+        Conoscendo i cluster, l'ingegnere non doveva più esaminare ogni file singolarmente: poteva concentrarsi sui pochi
+        cluster distinti emersi, rendendo molto più facile individuare gli errori.
+      </p>
+    </div>
+    <h3 class="only-en">How it works, at a high level</h3>
+    <h3 class="only-it">Come funziona, ad alto livello</h3>
+    <ul class="only-en">
+      <li>Each configuration is turned into a hierarchical tree of named variables and nested blocks (interfaces, protocols, and so on).</li>
+      <li>Two configurations are compared by structural equivalence: matching variable sets and matching sub-branches, while flagged "volatile" fields (like IPs) are excluded from the comparison.</li>
+      <li>Structurally identical configurations are grouped into a single <em>species</em>, with an instance count and links to each member.</li>
+    </ul>
+    <ul class="only-it">
+      <li>Ogni configurazione viene trasformata in un albero gerarchico di variabili con nome e blocchi annidati (interfacce, protocolli e così via).</li>
+      <li>Due configurazioni si confrontano per equivalenza strutturale: insiemi di variabili corrispondenti e sotto-rami corrispondenti, mentre i campi "volatili" contrassegnati (come gli IP) sono esclusi dal confronto.</li>
+      <li>Le configurazioni strutturalmente identiche vengono raggruppate in un'unica <em>specie</em>, con un conteggio delle istanze e i collegamenti a ciascun membro.</li>
+    </ul>
+  </section>
+
+  <!-- ============ TECH ============ -->
+  <section>
+    <h2><span class="only-en">Technology</span><span class="only-it">Tecnologia</span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th><span class="only-en">Area</span><span class="only-it">Ambito</span></th>
+          <th><span class="only-en">Choice</span><span class="only-it">Scelta</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="only-en">Language &amp; UI</span><span class="only-it">Linguaggio e UI</span></td>
+          <td>Java, Swing/AWT<span class="only-en">, with <code>Runnable</code>-based concurrency</span><span class="only-it">, con concorrenza basata su <code>Runnable</code></span></td>
+        </tr>
+        <tr>
+          <td><span class="only-en">Connectivity</span><span class="only-it">Connettività</span></td>
+          <td><span class="only-en">Telnet via the Apache ORO networking library</span><span class="only-it">Telnet tramite la libreria di rete Apache ORO</span></td>
+        </tr>
+        <tr>
+          <td><span class="only-en">Parsing</span><span class="only-it">Parsing</span></td>
+          <td><code>java.util.regex</code><span class="only-en"> (Pattern/Matcher), for multi-line configuration blocks</span><span class="only-it"> (Pattern/Matcher), per blocchi di configurazione multi-riga</span></td>
+        </tr>
+        <tr>
+          <td><span class="only-en">Data &amp; output</span><span class="only-it">Dati e output</span></td>
+          <td><span class="only-en">XML/DOM, HTML report tables, SVG diagrams</span><span class="only-it">XML/DOM, tabelle di report HTML, diagrammi SVG</span></td>
+        </tr>
+        <tr>
+          <td><span class="only-en">Build / IDE</span><span class="only-it">Build / IDE</span></td>
+          <td><span class="only-en">Borland JBuilder projects (<code>.jpr</code> / <code>.jpx</code>)</span><span class="only-it">Progetti Borland JBuilder (<code>.jpr</code> / <code>.jpx</code>)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ NOTE ============ -->
+  <section>
+    <h2><span class="only-en">A note</span><span class="only-it">Una nota</span></h2>
+    <p class="muted only-en">
+      This is genuinely old code, kept as a historical archive. It reflects the tools, libraries, and conventions of its
+      time, and its comments are largely in Italian. It is published as a record of an early, formative engineering
+      project rather than as a maintained product.
+    </p>
+    <p class="muted only-it">
+      Questo è codice davvero datato, conservato come archivio storico. Riflette strumenti, librerie e convenzioni della
+      sua epoca, e i commenti sono in larga parte in italiano. È pubblicato come testimonianza di un progetto
+      ingegneristico iniziale e formativo, più che come prodotto mantenuto.
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  Cantina · <span class="only-en">Network Configuration Assessment Toolchain · circa 2002</span><span class="only-it">Toolchain per la valutazione delle configurazioni di rete · circa 2002</span>
+</footer>
+
+<script>
+  (function () {
+    var body = document.body;
+    var buttons = document.querySelectorAll('.lang-switch button');
+
+    function setLang(lang) {
+      body.classList.remove('lang-en', 'lang-it');
+      body.classList.add('lang-' + lang);
+      document.documentElement.lang = lang;
+      buttons.forEach(function (b) {
+        b.setAttribute('aria-pressed', b.dataset.lang === lang ? 'true' : 'false');
+      });
+      try { localStorage.setItem('cantina-lang', lang); } catch (e) {}
+    }
+
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () { setLang(b.dataset.lang); });
+    });
+
+    var saved;
+    try { saved = localStorage.getItem('cantina-lang'); } catch (e) {}
+    if (!saved) {
+      saved = (navigator.language || 'en').toLowerCase().indexOf('it') === 0 ? 'it' : 'en';
+    }
+    setLang(saved);
+  })();
+</script>
+
+</body>
+</html>
