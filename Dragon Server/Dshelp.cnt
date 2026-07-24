@@ -1,0 +1,77 @@
+:Base DSHelp.hlp
+:Title Dragon Server Help
+:Index =DSHelp.hlp
+1 Introduction=DRAGON_SERVER
+1 Getting Started
+2 Overview=OVERVIEW
+2 Setting up Dragon Server=INITIAL_SETUP
+1 Main Menu
+2 Preferences
+3 Preferences Screen=FILE_MENU_PREFERENCES
+3 Minimize automatically=MINIMIZE_ON_STARTUP
+3 Password protect option screens=PASSWORD_PROTECT_OPTIONS
+3 Starting other programs when Dragon Server starts=START_OTHERS_AT_STARTUP
+2 Server Information
+3 What is the server information?=SERVER_MENU_SERVER_INFORMATION
+2 External Applications
+3 External Applications=SERVER_MENU_EXTERNAL_PROGRAMS
+3 Actual path to external application=EXTERNAL_ACTUAL_PATH
+3 Alias of external application=EXTERNAL_ALIAS
+3 Adding, Updating and Removing External applications=EXTERNAL_AUD_PROGRAMS
+3 Setting permissions for Exteral Applications=EXTERNAL_PERMISSIONS_SETUP
+2 VFS Explorer
+3 VFS Explorer=SERVER_MENU_VFS_EXPLORER
+3 VFS Directory Tree=VFS_EXPLORER_DIR_TREE
+3 VFS File List View=VFS_EXPLORER_FILE_LV
+3 Permissions Controls=VFS_EXPLORER_PERMISSIONS
+3 Owner List Box=VFS_EXPLORER_OWNER_LB
+3 Group List box=VFS_EXPLORER_GROUP_LB
+2 Server Settings / Options
+3 Server Settings Screen=SERVER_MENU_OPTIONS
+3 Setting the home directory=SERVER_SET_HOMEDIR
+3 Limiting maximum connections=SERVER_SET_MAXUSERS
+3 Enabling and disabling services=SERVER_SET_SERVICES
+3 FTP login message=SERVER_SET_FTP_LOGIN_MSG
+3 Setting up mounts=SERVER_SET_MOUNTS
+2 Group Options
+3 Groups Screen=GROUPS_MENU_OPTIONS
+3 Adding a group and selecting users in it=GROUPS_MENU_OPTIONS
+2 User Options
+3 Users Screen=USERS_MENU_OPTIONS
+3 Super User access=USERS_SET_SUPERUSER
+3 Limiting number of simultaneous logins for a user name=USERS_SET_MAX_LOGINS
+3 Setting maximum allowed inactivity time while online=USERS_SET_TIMEOUT
+3 Setting the users home directory=USERS_SET_HOMEDIR
+3 Setting users allowed connection types=USERS_SET_ALLOWED_CONNS
+2 Online Users
+3 Online Users Screen=USER_MENU_ONLINE_USERS
+1 Telnet Commands
+2 List of Telnet Commands=TELNET_COMMANDS_OVERVIEW
+1 FTP Commands
+2 List of FTP commands=FTP_COMMANDS_OVERVIEW
+1 Troubleshooting
+2 Why is the Server Configuration screen coming up every time I try to start the Server?=QUESTION1
+2 Why can't a valid user login to the server?=QUESTION2
+2 My changes for the users or groups in External Programs screen don't take effect.  How do I keep them?=QUESTION3
+2 My changes to the Server Screen are not taking effect.  How do I keep them?=QUESTION4
+2 Anything else=ANYTHING_ELSE
+1 How to's
+2 How to Add an External Application=HOW_TO_ADD_EXTPGM
+2 How to Change an External Application=HOW_TO_CHANGE_EXTPGM
+2 How to Delete an External Application=HOW_TO_DELETE_EXTPGM
+2 How to Add a Mount=HOW_TO_ADD_MOUNT
+2 How to Change a Mount=HOW_TO_CHANGE_MOUNT
+2 How to Delete a Mount=HOW_TO_DELETE_MOUNT
+2 How to Add a Group Record=HOW_TO_ADD_GROUP
+2 How to Change a Group Record=HOW_TO_CHANGE_GROUP
+2 How to Delete a Group Record=HOW_TO_DELETE_GROUP
+2 How to Rename a Group Record=HOW_TO_RENAME_GROUP
+2 How to Add a User Record=HOW_TO_ADD_USER
+2 How to Change a Users Record=HOW_TO_CHANGE_USER
+2 How to Delete a User Record=HOW_TO_DELETE_USER
+2 How to Set up an Anonymous User=HOW_TO_ANONYMOUS_USER
+2 How to Disable a User Record=HOW_TO_DISABLE_USER
+2 How to Change the Owner of a File=HOW_TO_CHANGE_OWNER
+2 How to Change the Group for a File=HOW_TO_CHANGE_GROUP_FILE
+2 How to Change the Permissions of a File=HOW_TO_CHANGE_PERMISSIONS
+1 The End

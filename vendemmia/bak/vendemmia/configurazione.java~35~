@@ -1,0 +1,58 @@
+package vendemmia;
+import java.io.*;
+import java.util.*;
+
+/**
+ * <p>Title: Aladino</p>
+ * <p>Description: Apre una serie di sessioni telnet verso una lista di indirizzi ed esegue un insieme prestailito di comandi</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class configurazione implements Runnable {
+
+  public String indirizzoWS;
+  public int portaWS = 23;
+  public String userWS;
+  public String passwWS;
+  public ArrayList userWSs = new ArrayList();
+  public ArrayList passWSs =  new ArrayList();
+
+  public String promptWS=null;
+  public String[][] utentiParoleLogIN;
+  public String[] paroleLogIN;
+  public String[] paroleEnable;
+  public String[] user_name_Enable;
+  public String[] user_passwd_Enable;
+  public String fileIndirizzi;
+  public String fileIndirizziVisitati;
+  public String fileIndirizziFalliti;
+  public String directoryShRun;
+  public String directoryShTech;
+  public String directoryVinaccia;
+  public String directoryShLogging;
+  public String start_discovery_address;
+  public boolean first_discovery=true;
+  public String directoryBase;
+
+  public configurazione(int numeroLogin, int numeroEnable, int numeroParoleLogIN, int numero_user_name_passwd) {
+    utentiParoleLogIN = new String[numeroLogin][2];
+    paroleEnable = new String[numeroEnable];
+    paroleLogIN = new String[numeroParoleLogIN];
+    user_name_Enable = new String[numero_user_name_passwd];
+    user_passwd_Enable = new String[numero_user_name_passwd];
+  }
+
+  public void run() {
+    File cartellaShRun = new File(directoryShRun);
+    cartellaShRun.mkdir();
+    File cartellaShTech = new File(directoryShTech);
+    cartellaShTech.mkdir();
+    File cartellaVinaccia = new File(directoryVinaccia);
+    cartellaVinaccia.mkdir();
+    File cartellaShLogging = new File(directoryShLogging);
+    cartellaShLogging.mkdir();
+  }
+}

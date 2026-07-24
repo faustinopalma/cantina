@@ -1,0 +1,132 @@
+Dragon Server Software License Agreement
+
+BEFORE PROCEEDING WITH THE INSTALLATION AND/OR USE OF THIS SOFTWARE, 
+CAREFULLY READ THE FOLLOWING TERMS AND CONDITIONS OF THIS LICENSE 
+AGREEMENT AND LIMITED WARRANTY (The "Agreement"). 
+
+BY INSTALLING OR USING THIS SOFTWARE YOU INDICATE YOUR ACCEPTANCE OF 
+THIS AGREEMENT. IF YOU DO NOT ACCEPT OR AGREE WITH THESE TERMS, YOU 
+MAY NOT INSTALL OR USE THIS SOFTWARE!
+
+
+LICENSE
+
+This software, including documentation is owned by the authors 
+(James Steingraber and Terry Wyatt) and is protected by copyright law 
+and international treaty provisions. This Agreement does not provide 
+you with title or ownership of Product, but only a right of limited 
+use as outlined in this license agreement. We the owners hereby grant 
+you a non-exclusive, royalty free license to use the Software as set 
+forth below:
+
+-   integrate the Software with other Applications, subject to the redistribution 
+    terms below.
+
+REDISTRIBUTION RIGHTS
+
+You are granted a non-exclusive, royalty-free right to reproduce and redistribute 
+the shareware version of this application only in it's original form in conjunction 
+with software products that you develop and/or market.
+
+RESTRICTIONS
+
+Without the expressed, written consent of the authors, you may NOT:
+
+-   re-distribute any portion of the software, in whole or in part 
+    except as expressly allowed above. The owners reserve the right as the 
+    sole distributor of the Full registered version, which can only be 
+    receieved by contacting them as listed at the end of this document.
+-   modify, or distribute the documentation for the Software, in whole or in part.
+-   distribute modified versions of the Software, in whole or in part, in source 
+    or object format. Specifically you may not distribute derivative works based 
+    on the Dragon Server application.
+-   rent or lease the Software.
+-   use the Software in the development of an operating system or online service.
+-   sell any portion of the Software, that right is reserved for the owners.
+
+
+SELECTION AND USE
+
+You assume full responsibility for the selection of the Software to achieve your 
+intended results and for the installation, use and results obtained from the Software.
+
+LIMITED WARRANTY
+
+THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND EITHER EXPRESSED 
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES MERCHANTIBILITY 
+AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND 
+PERFORMANCE OF THE PRODUCT IS WITH YOU.  SHOULD THE PRODUCT PROVE DEFECTIVE, 
+YOU ASSUME THE COST OF ALL NECESSARY SERVICING OR ERROR CORRECTION.
+
+THE AUTHORS DO NOT WARRANT THAT THE FUNCTIONS CONTAINED IN THE SOFTWARE 
+WILL MEET YOUR REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE 
+UNINTERRUPTED OR ERROR FREE. 
+
+No oral or written information given by the owners, its agents or employees shall 
+create a warranty.
+
+LIMITATION OF REMEDIES AND LIABILITY.
+
+IN NO EVENT SHALL THE AUTHORS OF THIS SOFTWARE, OR ANY OTHER PARTY WHO MAY HAVE 
+DISTRIBUTED THE SOFTWARE AS PERMITTED ABOVE, BE LIABLE FOR DAMAGES, INCLUDING 
+ANY GENERAL, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE 
+USE OR INABILITY TO USE THE SOFTWARE (INCLUDING BUT NOT LIMITED TO LOSS OF DATA 
+OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES 
+OR FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER PRODUCTS), EVEN IF SUCH 
+HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+The cumulative liability of the authors to you for all claims relating to 
+the Software, in contract, tort, or otherwise, shall not exceed the total 
+amount of license fees paid to them for the relevant Software.
+The foregoing limitation of liability and exclusion of certain damages shall 
+apply regardless of the success or effectiveness of other remedies.
+
+GENERAL
+
+Notices. All notices or other communications required to be given shall be 
+in writing and delivered either personally or by U.S. mail, certified, 
+return receipt requested, postage prepaid, and addressed as provided in 
+the Agreement or as otherwise requested by the receiving party.  Notices 
+delivered personally shall be effective upon delivery and notices delivered 
+by mail shall be effective upon their receipt by the party to whom they are 
+addressed.
+
+Severability. Should any term of this License Agreement be declared void 
+or unenforceable by any court of competent jurisdiction, such declaration 
+shall have no effect on the remaining terms hereof.
+
+Governing Law. This Agreement shall be governed by and construed and enforced 
+in accordance with the laws of the State of Alabama, USA as it applies to a 
+contract made and performed in such state.
+
+No Waiver. The failure of either party to enforce any rights granted hereunder 
+or to take action against the other party in the event of any breach hereunder 
+shall not be deemed a waiver by that party as to subsequent enforcement of 
+rights or subsequent actions in the event of future breaches.
+
+Costs of Litigation. If any action is brought by either party to this License 
+Agreement against the other party regarding the subject matter hereof, the 
+prevailing party shall be entitled to recover, in addition to any other relief 
+granted, reasonable attorney fees and expenses of litigation.
+
+If you have any questions regarding this agreement, please contact 
+
+Jim Steingraber   Email:  ntrceptr@zebra.net
+                          ntrceptr@the-link.net
+or
+
+Terry Wyatt       Email:  phantom01@hotmail.com
+
+
+Current Home page for Dragon Server is at:
+
+http://users.the-link.net/ntrceptr/index.html
+
+
+
+
+
+
+
+
+

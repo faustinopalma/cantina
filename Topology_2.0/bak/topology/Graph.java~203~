@@ -1,0 +1,222 @@
+package topology;
+import java.util.*;
+import java.io.*;
+import org.w3c.dom.*;
+import javax.xml.parsers.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.*;
+import javax.xml.transform.stream.*;
+
+/**
+ * <p>Title: Topology</p>
+ * <p>Description: Disegna un grafo della rete in formato SVG</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Exeleration</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class Graph implements Runnable {
+  boolean pronto=false;
+  private ArrayList Nodes = new ArrayList();
+  int numNodes() {
+    return Nodes.size();
+  }
+  double minCentrality=Double.MAX_VALUE;
+  double maxCentrality=0;
+  double scale_R=1;
+  double r = 10;
+  double k_repulsive=1;
+  double k_attratctive=1;
+  private class node {
+    int id;
+    String XMLidentification;
+    String name;
+    String riferimento;
+    double angle;
+    double delta;
+    int indice;
+    void setAngle(int p) {
+      angle=2*Math.PI*(p%Nodes.size())/Nodes.size();
+    }
+    double centrality;
+    double n_centrality;
+    boolean initialPositioned=false;
+    ArrayList Vectors = new ArrayList();
+    public class vector {
+      int nextHop;
+      double distance;
+    }
+    vector vector(int destination) {return (vector) Vectors.get(destination);}
+    void addVector(int nextHop, double distance) {
+      vector vector = new vector();
+      vector.nextHop = nextHop;
+      vector.distance = distance;
+      Vectors.add(vector);
+    }
+    ArrayList Neighbors = new ArrayList();
+    void addNeighbor(int id) {
+      Integer neighbor = new Integer(id);
+      Neighbors.add(neighbor);
+    }
+    int neighbor(int indice) {
+      return ((Integer)Neighbors.get(indice)).intValue();
+    }
+  }//end class node
+  node node(int indice) {return (node) Nodes.get(indice);}
+
+  void addNode(int id, String name, String XMLidentification, String riferimento) {
+    node node = new node();
+    node.id = id;
+    node.name= name;
+    node.indice=Nodes.size();
+    node.XMLidentification=XMLidentification;
+    node.riferimento=riferimento;
+    Nodes.add(node);
+  }
+  private ArrayList Links = new ArrayList();
+  int numLinks() {
+    return Links.size();
+  }
+  private class link {
+    int source;
+    int target;
+    double distance;
+    String type;
+  }//end class Links
+  void addLink(int source, int target, double distance, String type) {
+    link link = new link();
+    link.source=source;
+    link.target=target;
+    link.distance=distance;
+    link.type=type;
+    Links.add(link);
+  }
+  link link(int indice) {return (link) Links.get(indice);}
+
+  void meetNeighbors() {
+    for (int l=0; l<Links.size(); l++) {
+      int s=link(l).source;
+      int t=link(l).target;
+      node(s).addNeighbor(t);
+      node(t).addNeighbor(s);
+    }
+  }
+
+  //Costruttore del Graph
+  String nomeFileTopologiaXML;
+  public Graph(String nomeFileTopologiaXML) {
+    this.nomeFileTopologiaXML=nomeFileTopologiaXML;
+    Thread thread = new Thread(this);
+    thread.start();
+  }
+  public void run() {
+    Document topologiaXML=null;
+    try {
+      DocumentBuilderFactory fabbricaCostruttoriDocumenti = DocumentBuilderFactory.newInstance();
+      DocumentBuilder costruttoreDocumenti = fabbricaCostruttoriDocumenti.newDocumentBuilder();
+      topologiaXML = costruttoreDocumenti.parse(nomeFileTopologiaXML);
+    } catch (Exception err) {
+      interfaccia.messaggi.append("Errore nell'apertura del file XML topologia");
+    }
+    int numeroRouters = topologiaXML.getElementsByTagName("Nodes").item(0).getChildNodes().getLength();
+    NodeList listaRouters = topologiaXML.getElementsByTagName("Nodes").item(0).getChildNodes();
+    interfaccia.messaggi.append("\nNodes:\n");
+    for (int source=0; source<numeroRouters; source++) {
+      if (source%100==0&&source>0)
+        interfaccia.messaggi.append("\n");
+      interfaccia.messaggi.append("!");
+      Element router = (Element) listaRouters.item(source);
+      addNode(source, router.getAttribute("name"), router.getAttribute("id"), router.getAttribute("riferimento"));
+      router.setAttribute("internalID", String.valueOf(source));
+      for (int target=0; target<numeroRouters; target++) {
+        if (source==target) {
+          node(source).addVector(source, 0);
+        } else {
+          node(source).addVector(target, Double.MAX_VALUE/2);
+        }
+      }
+    }//end for (int i=0; i<numeroRouters; i++)
+
+    int numeroLinks = topologiaXML.getElementsByTagName("Links").item(0).getChildNodes().getLength();
+    NodeList listaLinks = topologiaXML.getElementsByTagName("Links").item(0).getChildNodes();
+    interfaccia.messaggi.append("\nLinks:\n");
+    for (int i=0; i<numeroLinks; i++) {
+      if (i%100==0&&i>0)
+        interfaccia.messaggi.append("\n");
+      try {
+        interfaccia.messaggi.append("!");
+        Element link = (Element) listaLinks.item(i);
+        Element sourceElement = topologiaXML.getElementById(link.getAttribute("source"));
+        Element targetElement = topologiaXML.getElementById(link.getAttribute("target"));
+        double distance = (new Long(link.getAttribute("distance"))).longValue();
+        int source = (new Integer(sourceElement.getAttribute("internalID"))).intValue();
+        int target = (new Integer(targetElement.getAttribute("internalID"))).intValue();
+        String typeLink = link.getAttribute("type");
+        addLink(source, target, distance, typeLink);
+        node(source).vector(target).nextHop=target;
+        node(source).vector(target).distance=distance;
+        node(target).vector(source).nextHop=source;
+        node(target).vector(source).distance=distance;
+      } catch (NullPointerException err) {}
+    }//end for (int i=0; i<numeroLinks; i++)
+    pronto=true;
+  }
+
+  private ArrayList mostCentral = new ArrayList();
+  void classifyCentrality() {
+    mostCentral.clear();
+    mostCentral.add(node(0));
+    for (int i=1; i<Nodes.size(); i++) {
+      boolean classificato=false;
+      int indice_inferiore=0;
+      int indice_superiore=mostCentral.size();
+      int indice_medio=(indice_superiore+indice_inferiore)/2;
+      while (!classificato) {
+        if (indice_superiore-indice_inferiore<=1) {
+          if ( node(i).centrality<mostCentral(indice_inferiore).centrality ) {
+            mostCentral.add(indice_inferiore, node(i));
+            classificato=true;
+          } else {
+            mostCentral.add(indice_superiore, node(i));
+            classificato=true;
+          }
+        } else {
+          indice_medio=(indice_superiore+indice_inferiore)/2;
+          if (node(i).centrality<mostCentral(indice_medio).centrality ) {
+            indice_superiore=indice_medio;
+          } else {
+            indice_inferiore=indice_medio;
+          }
+        }
+      }//end while (!classificato)
+    }//end (int i=0; i<Nodes.size(); i++)
+  }
+  node mostCentral(int i) {
+    return (node) mostCentral.get(i);
+  }
+
+  void initialPosition(double deltaCentrality) {
+    classifyCentrality();
+    ArrayList daPosizionareArray = new ArrayList(mostCentral);
+    int posizione=0;
+    for (int i=0; i<daPosizionareArray.size(); i++) {
+      node daPosizionare = (node) daPosizionareArray.get(i);
+      if (!daPosizionare.initialPositioned) {
+        daPosizionare.setAngle(posizione);
+        daPosizionare.initialPositioned=true;
+        posizione++;
+      }
+      for (int j=0; j<daPosizionare.Neighbors.size(); j++) {
+        node neighborJ = node(daPosizionare.neighbor(j));
+        if (!neighborJ.initialPositioned &&
+            neighborJ.centrality-daPosizionare.centrality>deltaCentrality)
+        {
+          neighborJ.setAngle(posizione);
+          neighborJ.initialPositioned=true;
+          posizione++;
+        }
+      }//end for (int j=0; j<daPosizionare.Neighbors.size(); j++)
+    }//end for (int i=0; i<daPosizionareArray.size(); i++)
+  }
+}//end class Graph

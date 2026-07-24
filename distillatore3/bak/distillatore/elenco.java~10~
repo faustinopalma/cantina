@@ -1,0 +1,47 @@
+package distillatore;
+import java.util.*;
+import java.io.*;
+import java.awt.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class elenco {
+  TextArea messaggi = new TextArea();
+  public ArrayList lista = new ArrayList();
+  public elenco(String arg , TextArea messaggi) {
+    try {
+      File radice = new File(arg);
+      File[] elenco1 = radice.listFiles();
+
+      for (int i = 0; i < elenco1.length; i++) {
+        if (elenco1[i].isDirectory()) {
+          elenco sottoCartella = new elenco(elenco1[i].getCanonicalPath(), messaggi);
+          lista.addAll(sottoCartella.getLista());
+        } else {
+          lista.add(elenco1[i].getCanonicalPath());
+        }
+      }
+    } catch (NullPointerException e) {
+      messaggi.append("Classe elenco, Metodo elenco: Directory non trovata");
+      throw new IOException();
+    } catch (IOException e) {
+      messaggi.append("\n" + "Classe elenco, Metodo elenco: Problema nel sistema IO");
+    }
+  }
+  public String getElemento(int i) {
+    return (String) lista.get(i);
+  }
+  public ArrayList getLista() {
+    return lista;
+  }
+  public int getLunghezza() {
+    return (int) lista.size();
+  }
+} //Fine elenco

@@ -1,0 +1,390 @@
+package distillatore;
+import java.util.regex.*;
+import java.util.*;
+import java.awt.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class distillatore {
+  TextArea messaggi = new TextArea();
+  String testo;
+  public distillatore(String arg, TextArea messaggi) {
+    testo = arg;
+  }
+
+  public String[] trovaPrendiRegularExp(String chiave) {
+    ArrayList risultato = new ArrayList();
+    try {
+      Pattern chiavePattern = Pattern.compile(chiave);
+      Matcher chiaveMatcher = chiavePattern.matcher(testo);
+      while (chiaveMatcher.find() ) {
+        risultato.add(testo.substring(chiaveMatcher.start(), chiaveMatcher.end()));
+      }
+      if (risultato.size() > 0) {
+        Object[] r = risultato.toArray();
+        String[] rString = new String[r.length];
+        for (int k = 0; k < r.length; k++) {
+          rString[k] = (String) r[k];
+        }
+        return rString;
+      } else {
+        return null;
+      }
+    } catch (NullPointerException e) {
+      return null;
+    }
+  }
+
+  public String[] trovaPrendiRegularExpAccapo(String chiave) {
+    ArrayList risultato = new ArrayList();
+    try {
+      Pattern chiavePattern = Pattern.compile(chiave, Pattern.DOTALL);
+      Matcher chiaveMatcher = chiavePattern.matcher(testo);
+      while (chiaveMatcher.find() ) {
+        risultato.add(testo.substring(chiaveMatcher.start(), chiaveMatcher.end()));
+      }
+      if (risultato.size() > 0) {
+        Object[] r = risultato.toArray();
+        String[] rString = new String[r.length];
+        for (int k = 0; k < r.length; k++) {
+          rString[k] = (String) r[k];
+        }
+        return rString;
+      } else {
+        return null;
+      }
+    } catch (NullPointerException e) {
+      return null;
+    }
+  }
+
+  public String[] separaBlocchiRipetuti(String inizia,String finisce) {
+    try {
+      ArrayList risultato = new ArrayList();
+      int prima = 0;
+      int ultima = 0;
+      int ultimaStart = 0;
+      Pattern PrimaRigaPattern = Pattern.compile(inizia);
+      Matcher PrimaRiga = PrimaRigaPattern.matcher(testo.toString() );
+      Pattern UltimaRigaPattern = Pattern.compile(finisce);
+      Matcher UltimaRiga = UltimaRigaPattern.matcher(testo.toString() );
+      boolean uscire = false;
+      while (!uscire) {
+        if (PrimaRiga.find(ultimaStart) ) {
+          prima = PrimaRiga.start();
+          if (UltimaRiga.find(prima) ) {
+            ultima = UltimaRiga.end();
+            ultimaStart = UltimaRiga.start();
+            risultato.add(testo.substring(prima,ultima) );
+          } else {
+            uscire = true;
+            messaggi.append("\n" +"Classe distillatore, Metodo separaBlocchiRipetuti: trovato un inizio senza una fine");
+          }
+        } else {
+            uscire = true;
+        }
+      }
+      if (risultato.size() > 0) {
+        Object[] r = risultato.toArray();
+        String[] rString = new String[r.length];
+        for (int k = 0; k < r.length; k++) {
+          rString[k] = (String) r[k];
+        }
+        return rString;
+      } else {
+        return null;
+      }
+    } catch (NullPointerException e) {return null;}
+  }
+
+
+  public String[] separaBlocchiRipetuti(String inizia) {
+    try {
+      ArrayList risultato = new ArrayList();
+      int prima = 0;
+      int primaEnd = 0;
+      int ultima = 0;
+      Pattern RigaPattern = Pattern.compile(inizia);
+      Matcher Riga = RigaPattern.matcher(testo.toString());
+      boolean uscire = false;
+      while (!uscire) {
+        if (Riga.find(primaEnd)) {
+          prima = Riga.start();
+          primaEnd = Riga.end();
+          if (Riga.find(primaEnd)) {
+            ultima = Riga.start();
+            risultato.add(testo.substring(prima,ultima));
+          } else {
+            uscire = true;
+            risultato.add(testo.substring(prima));
+          }
+        } else {
+            uscire = true;
+        }
+      }
+      if (risultato.size() > 0) {
+        Object[] r = risultato.toArray();
+        String[] rString = new String[r.length];
+        for (int k = 0; k < r.length; k++) {
+          rString[k] = (String) r[k];
+        }
+        return rString;
+      } else {
+        return null;
+      }
+    } catch (NullPointerException e) {return null;}
+  } //fine separaBlocchiRipetuti
+
+
+
+  public String trovaPrendiParola(String chiave, int distanza) {
+    try {
+      String delimitatori = " \n";
+      int inizio;
+      int fine;
+      String trovato;
+      Pattern c = Pattern.compile(chiave);
+      Matcher cercatore = c.matcher(testo);
+      if (cercatore.find()) {
+        inizio = cercatore.end() + distanza - 1;
+        fine = inizio;
+        try {
+          while (delimitatori.indexOf(testo.substring(inizio-1,inizio)) == -1) {
+            inizio--;
+          }
+        } catch (StringIndexOutOfBoundsException e) {}
+
+        try {
+          while (delimitatori.indexOf(testo.substring(fine,fine+1)) == -1) {
+            fine++;
+          }
+        } catch (StringIndexOutOfBoundsException e) {}
+
+        trovato = testo.substring(inizio,fine);
+      } else {
+        //messaggi.append("\n" +"Classe distillatore, Metodo trovaPrendiParola: Non c'è nessuna occorrenza del pattern");
+        return "";
+      }
+
+      return trovato;
+    } catch (NullPointerException e) {return "";}
+  } // fine TrovaPrendiParola
+
+
+  public String trovaPrendiParola(String chiave, int distanza, int numeroParole) {
+  try {
+    String delimitatori = " \n";
+    int inizio;
+    int fine;
+    String trovato;
+    Pattern c = Pattern.compile(chiave);
+    Matcher cercatore = c.matcher(testo);
+    if (cercatore.find()) {
+      inizio = cercatore.end() + distanza - 1;
+      fine = inizio;
+      try {
+      while (delimitatori.indexOf(testo.substring(inizio-1,inizio)) == -1) {
+          inizio--;
+        }
+      } catch (StringIndexOutOfBoundsException e) {}
+
+      try {
+      boolean uscita = false;
+      int paroleTrovate = 0;
+      while (!uscita) {
+          if (delimitatori.indexOf(testo.substring(fine,fine+1)) != -1) {
+            paroleTrovate++;
+          }
+          uscita = (paroleTrovate == numeroParole);
+          fine++;
+        }
+      } catch (StringIndexOutOfBoundsException e) {}
+
+      trovato = testo.substring(inizio,fine - 1);
+    } else {
+      //messaggi.append("\n" +"Classe distillatore, Metodo trovaPrendiParola (Seconda): Non c'è nessuna occorrenza del pattern");
+      return "";
+    }
+    return trovato;
+  } catch (NullPointerException e) {return "";}
+  } // fine TrovaPrendiParola
+
+
+  public String trovaPrendiRiga(String chiave) {
+  try {
+    String delimitatori = "\n";
+    int inizio;
+    int fine;
+    String trovato;
+    Pattern c = Pattern.compile(chiave);
+    Matcher cercatore = c.matcher(testo);
+    if (cercatore.find()) {
+      inizio = cercatore.end();
+      fine = inizio;
+      try {
+      while (delimitatori.indexOf(testo.substring(fine,fine+1)) == -1) {
+          fine++;
+        }
+      } catch (StringIndexOutOfBoundsException e) {}
+
+      trovato = testo.substring(inizio,fine);
+    } else {
+      //messaggi.append("\n" +"Classe distillatore, Metodo trovaPrendiRiga: Non c'è nessuna occorrenza del pattern");
+      return "";
+    }
+    return trovato;
+  } catch (NullPointerException e) {return "";}
+  } // fine TrovaPrendiRiga
+
+  public String trovaPrendiRigaTutta(String chiave) {
+  try {
+    String delimitatori = "\n";
+    int inizio;
+    int fine;
+    String trovato;
+    Pattern c = Pattern.compile(chiave);
+    Matcher cercatore = c.matcher(testo);
+    if (cercatore.find()) {
+      inizio = cercatore.start();
+      fine = cercatore.end();
+      try {
+      while (delimitatori.indexOf(testo.substring(fine,fine+1)) == -1) {
+          fine++;
+        }
+      } catch (StringIndexOutOfBoundsException e) {}
+
+      trovato = testo.substring(inizio,fine);
+    } else {
+      messaggi.append("\n" +"Classe distillatore, Metodo trovaPrendiRigaTutta: Non c'è nessuna occorrenza del pattern");
+      return "";
+    }
+    return trovato;
+  } catch (NullPointerException e) {return "";}
+  } // fine TrovaPrendiRigaTutta
+
+
+  public String trovaPrendiBanner() {
+  try {
+    String delimitatori;
+    int inizio;
+    int fine;
+    String trovato;
+    Pattern c = Pattern.compile("banner (motd)?");
+    Matcher cercatore = c.matcher(testo);
+    if (cercatore.find()) {
+      if (testo.charAt(cercatore.end() + 1) == '^') {
+        delimitatori = testo.substring(cercatore.end() + 1, cercatore.end() + 3);
+        inizio = cercatore.end() + 3;
+      } else {
+        delimitatori = testo.substring(cercatore.end() + 1, cercatore.end() + 2);
+        inizio = cercatore.end() + 2;
+      }
+      fine = inizio;
+      try {
+      while (delimitatori.indexOf(testo.substring(fine,fine+2)) == -1) {
+          fine++;
+        }
+      } catch (StringIndexOutOfBoundsException e) {}
+
+      trovato = testo.substring(inizio,fine);
+    } else {
+      return "";
+    }
+    return trovato;
+  } catch (NullPointerException e) {return "";}
+  } // fine TrovaPrendiBanner
+
+  public String verificaParola(String parola) {
+  try {
+    String siNo;
+    Pattern siNoPattern = Pattern.compile(parola);
+    Matcher siNoMatcher = siNoPattern.matcher(testo);
+    if (siNoMatcher.find()) {
+      return "SI";
+    } else {
+      return "NO";
+    }
+  } catch (NullPointerException e) {return "";}
+  }
+
+  public boolean verificaParolaBool(String parola) {
+  try {
+    String siNo;
+    Pattern siNoPattern = Pattern.compile(parola);
+    Matcher siNoMatcher = siNoPattern.matcher(testo);
+    if (siNoMatcher.find()) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (NullPointerException e) {return false;}
+  }
+
+
+  public String trovaPrendiTuttiNumeri() {
+  try {
+    String numeri = "";
+    Pattern unNumeroPattern = Pattern.compile("[0-9/\\(\\)\\-]*");
+    Matcher unNumero = unNumeroPattern.matcher(testo);
+    while (unNumero.find() ) {
+      numeri = numeri + testo.substring(unNumero.start(), unNumero.end() );
+    }
+    return numeri;
+  } catch (NullPointerException e) {return "";}
+  }
+
+  public String trovaPrendiProssimoNumero(String parola) {
+    String risultato = "";
+    try {
+      Pattern parolaPattern = Pattern.compile(parola);
+      Matcher parolaMatcher = parolaPattern.matcher(testo);
+      if (parolaMatcher.find() ) {
+        String daInizioParola = testo.substring( parolaMatcher.start() );
+        Pattern NumeroPattern = Pattern.compile("[0-9/\\(\\)\\-]+");
+        Matcher Numero = NumeroPattern.matcher(daInizioParola );
+        if (Numero.find() ) {
+          risultato += daInizioParola.substring(Numero.start(), Numero.end() );
+        }
+      }
+    } catch (NullPointerException e) {}
+    return risultato;
+  }
+
+  public ArrayList trovaPrendiProssimoNumeroMultiplo(String parola) {
+    ArrayList risultato = new ArrayList();
+    try {
+      Pattern parolaPattern = Pattern.compile(parola);
+      Matcher parolaMatcher = parolaPattern.matcher(testo);
+      while (parolaMatcher.find() ) {
+        String daInizioParola = testo.substring( parolaMatcher.start() );
+        Pattern NumeroPattern = Pattern.compile("[0-9/\\(\\)\\-]+");
+        Matcher Numero = NumeroPattern.matcher(daInizioParola );
+        if (Numero.find() ) {
+          risultato.add(daInizioParola.substring(Numero.start(), Numero.end()));
+        }
+      }
+    } catch (NullPointerException e) {}
+    return risultato;
+  }
+
+  public ArrayList TrovaPrendiContenutoFra(String inizio, String fine) {
+    ArrayList risultato = new ArrayList();
+    try {
+      String stringaPattern = inizio + ".*" + fine;
+      Pattern pattern = Pattern.compile(stringaPattern);
+      Matcher matcher = pattern.matcher(testo);
+      while (matcher.find()) {
+        risultato.add(testo.substring(matcher.start(), matcher.end() ) );
+      }
+    } catch (NullPointerException e) {}
+    return risultato;
+  }
+
+} // fine distillatore

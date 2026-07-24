@@ -1,0 +1,312 @@
+package topology;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import com.borland.jbcl.layout.*;
+
+/**
+ * <p>Title: Topology</p>
+ * <p>Description: Disegna un grafo della rete in formato SVG</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Exeleration</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class interfaccia extends JFrame {
+  String nomeFileTopologiaXML;
+  Graph graph;
+  JPanel contentPane;
+  JMenuBar jMenuBar1 = new JMenuBar();
+  JMenu jMenuFile = new JMenu();
+  JMenuItem jMenuFileExit = new JMenuItem();
+  JMenu jMenuHelp = new JMenu();
+  JMenuItem jMenuHelpAbout = new JMenuItem();
+  XYLayout xYLayout1 = new XYLayout();
+  TextField CampoFileTopologiaXML = new TextField();
+  Label label1 = new Label();
+  Button button_start = new Button();
+  static TextArea messaggi = new TextArea();
+  engine engine;
+  static Label label_Energia = new Label();
+  Button button_generaSVG = new Button();
+  TextField scaleR = new TextField();
+  Label label_KappaGaussiana = new Label();
+  Button button_incrementa_K_Gaussiana = new Button();
+  Button button_decrementa_K_Gaussiana = new Button();
+  TextField textField_incremento_K_gaussiana = new TextField();
+  TextField textField_file_da_scalare = new TextField();
+  static volatile Button button_riscala = new Button();
+  Button button_minimizza = new Button();
+  Button button_stop_minimizza = new Button();
+  TextField textField_k_actractive = new TextField();
+  Button button_k_attractive = new Button();
+  TextField textField_k_repulsive = new TextField();
+  Button button_k_repulsive = new Button();
+
+  //Construct the frame
+  public interfaccia() {
+    enableEvents(AWTEvent.WINDOW_EVENT_MASK);
+    try {
+      jbInit();
+    }
+    catch(Exception e) {
+      e.printStackTrace();
+    }
+  }
+  //Component initialization
+  private void jbInit() throws Exception  {
+    //setIconImage(Toolkit.getDefaultToolkit().createImage(interfaccia.class.getResource("[Your Icon]")));
+    contentPane = (JPanel) this.getContentPane();
+    this.setSize(new Dimension(800, 600));
+    this.setTitle("Topology");
+    jMenuFile.setText("File");
+    jMenuFileExit.setText("Exit");
+    jMenuFileExit.addActionListener(new ActionListener()  {
+      public void actionPerformed(ActionEvent e) {
+        jMenuFileExit_actionPerformed(e);
+      }
+    });
+    jMenuHelp.setText("Help");
+    jMenuHelpAbout.setText("About");
+    jMenuHelpAbout.addActionListener(new ActionListener()  {
+      public void actionPerformed(ActionEvent e) {
+        jMenuHelpAbout_actionPerformed(e);
+      }
+    });
+    contentPane.setLayout(xYLayout1);
+    label1.setText("File XML Topologia:");
+    button_start.setLabel("Start");
+    button_start.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button_start_actionPerformed(e);
+      }
+    });
+    button_start.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_start_mousePressed(e);
+      }
+    });
+    CampoFileTopologiaXML.setText("\\topologiaXML.xml");
+    label_Energia.setText("ENERGY");
+    button_generaSVG.setLabel("Genera SVG");
+    button_generaSVG.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_generaSVG_mousePressed(e);
+      }
+    });
+    //button_generaSVG.setEnabled(false);
+    scaleR.setText("1");
+    button_incrementa_K_Gaussiana.setLabel("su");
+    button_incrementa_K_Gaussiana.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button_incrementa_K_Gaussiana_actionPerformed(e);
+      }
+    });
+    button_incrementa_K_Gaussiana.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_incrementa_K_Gaussiana_mousePressed(e);
+      }
+    });
+    button_decrementa_K_Gaussiana.setLabel("giu");
+    button_decrementa_K_Gaussiana.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_decrementa_K_Gaussiana_mousePressed(e);
+      }
+    });
+    label_KappaGaussiana.setText("0");
+    /*
+    button_.setLabel("giu 50");
+    button_.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button__mousePressed(e);
+      }
+    });*/
+    textField_incremento_K_gaussiana.setText("5");
+    textField_file_da_scalare.setText("\\grezzo.svg");
+    button_riscala.setLabel("rescale");
+    button_riscala.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_riscala_mousePressed(e);
+      }
+    });
+    button_minimizza.setLabel("minimizza");
+    button_minimizza.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_minimizza_mousePressed(e);
+      }
+    });
+    button_stop_minimizza.setEnabled(false);
+    button_stop_minimizza.setLabel("stop minimizza");
+    button_stop_minimizza.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_stop_minimizza_mousePressed(e);
+      }
+    });
+    textField_k_actractive.setText("0");
+    button_k_attractive.setLabel("k attractive");
+    button_k_attractive.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button_k_attractive_actionPerformed(e);
+      }
+    });
+    button_k_attractive.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_k_attractive_mousePressed(e);
+      }
+    });
+    textField_k_repulsive.setText("0");
+    textField_k_repulsive.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        textField_k_repulsive_actionPerformed(e);
+      }
+    });
+    button_k_repulsive.setLabel("k repulsive");
+    button_k_repulsive.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_k_repulsive_mousePressed(e);
+      }
+    });
+    jMenuFile.add(jMenuFileExit);
+    jMenuHelp.add(jMenuHelpAbout);
+    jMenuBar1.add(jMenuFile);
+    jMenuBar1.add(jMenuHelp);
+    contentPane.add(CampoFileTopologiaXML,        new XYConstraints(20, 40, 350, 20));
+    contentPane.add(label1,    new XYConstraints(20, 20, 200, 20));
+    contentPane.add(messaggi,       new XYConstraints(20, 130, 296, 148));
+    contentPane.add(button_start,   new XYConstraints(417, 33, 192, 93));
+    contentPane.add(label_Energia, new XYConstraints(204, 291, 112, 35));
+    contentPane.add(button_decrementa_K_Gaussiana, new XYConstraints(140, 436, 93, 38));
+    contentPane.add(button_incrementa_K_Gaussiana, new XYConstraints(138, 390, 93, 39));
+    contentPane.add(label_KappaGaussiana, new XYConstraints(52, 406, 75, 48));
+    contentPane.add(textField_incremento_K_gaussiana,  new XYConstraints(145, 345, 79, 39));
+    contentPane.add(button_generaSVG, new XYConstraints(535, 333, 225, 68));
+    contentPane.add(scaleR, new XYConstraints(417, 343, 77, 44));
+    contentPane.add(textField_file_da_scalare,   new XYConstraints(351, 466, 242, 33));
+    contentPane.add(button_riscala,   new XYConstraints(606, 462, 146, 46));
+    contentPane.add(button_stop_minimizza,  new XYConstraints(409, 284, 369, 35));
+    contentPane.add(button_minimizza, new XYConstraints(408, 234, 369, 36));
+    contentPane.add(textField_k_actractive,     new XYConstraints(413, 171, 52, 32));
+    contentPane.add(button_k_attractive,    new XYConstraints(482, 169, 105, 35));
+    contentPane.add(button_k_repulsive,  new XYConstraints(674, 167, 112, 40));
+    contentPane.add(textField_k_repulsive, new XYConstraints(612, 172, 47, 31));
+    this.setJMenuBar(jMenuBar1);
+  }
+  //File | Exit action performed
+  public void jMenuFileExit_actionPerformed(ActionEvent e) {
+    System.exit(0);
+  }
+  //Help | About action performed
+  public void jMenuHelpAbout_actionPerformed(ActionEvent e) {
+    interfaccia_AboutBox dlg = new interfaccia_AboutBox(this);
+    Dimension dlgSize = dlg.getPreferredSize();
+    Dimension frmSize = getSize();
+    Point loc = getLocation();
+    dlg.setLocation((frmSize.width - dlgSize.width) / 2 + loc.x, (frmSize.height - dlgSize.height) / 2 + loc.y);
+    dlg.setModal(true);
+    dlg.show();
+  }
+  //Overridden so we can exit when window is closed
+  protected void processWindowEvent(WindowEvent e) {
+    super.processWindowEvent(e);
+    if (e.getID() == WindowEvent.WINDOW_CLOSING) {
+      jMenuFileExit_actionPerformed(null);
+    }
+  }
+
+  void button_start_mousePressed(MouseEvent e) {
+    button_start.setEnabled(false);
+    nomeFileTopologiaXML = CampoFileTopologiaXML.getText();
+    graph = new Graph(nomeFileTopologiaXML);
+    engine = new engine(graph);
+    engine.start=true;
+  }
+
+
+  void button_generaSVG_mousePressed(MouseEvent e) {
+    lanciaOutputter outputter = new lanciaOutputter();
+  }
+  public class lanciaOutputter  implements Runnable{
+    public lanciaOutputter() {
+      Thread thread = new Thread(this);
+      thread.start();
+    }
+    public void run() {
+      outputterSVG out = new outputterSVG(engine.graph, nomeFileTopologiaXML.substring(0, nomeFileTopologiaXML.lastIndexOf("\\"))+"\\grezzo.svg");
+      out.drawPolar((new Double(scaleR.getText())).doubleValue() );
+      out.scriviElencoHTML(nomeFileTopologiaXML.substring(0, nomeFileTopologiaXML.lastIndexOf("\\"))+"\\elenco.html");
+    }
+  }
+
+  void button_incrementa_K_Gaussiana_mousePressed(MouseEvent e) {
+    engine.Kgaussian+=(new Double( textField_incremento_K_gaussiana.getText() )).doubleValue();
+    label_KappaGaussiana.setText(""+engine.Kgaussian);
+    label_KappaGaussiana.repaint();
+  }
+
+  void button_decrementa_K_Gaussiana_mousePressed(MouseEvent e) {
+    engine.Kgaussian-=(new Double( textField_incremento_K_gaussiana.getText() )).doubleValue();
+    label_KappaGaussiana.setText(""+engine.Kgaussian);
+    label_KappaGaussiana.repaint();
+  }
+
+
+
+  void button_iniziaSwap_actionPerformed(ActionEvent e) {
+
+  }
+
+  void button_start_actionPerformed(ActionEvent e) {
+
+  }
+
+
+  void button_riscala_mousePressed(MouseEvent e) {
+    button_riscala.setEnabled(false);
+    SVGTranform svgTransform = new SVGTranform( (new Double(scaleR.getText())).doubleValue(), textField_file_da_scalare.getText());
+  }
+
+  void button_incrementa_K_Gaussiana_actionPerformed(ActionEvent e) {
+
+  }
+
+
+  void button__mousePressed(MouseEvent e) {
+
+  }
+
+  void button_minimizza_mousePressed(MouseEvent e) {
+    engine = new engine(graph);
+    engine.Kgaussian= (new Double(label_KappaGaussiana.getText())).doubleValue();
+    engine.minimizza=true;
+    button_stop_minimizza.setEnabled(true);
+    button_generaSVG.setEnabled(false);
+    button_minimizza.setEnabled(false);
+  }
+
+  void button_stop_minimizza_mousePressed(MouseEvent e) {
+    engine.minimizza=false;
+    button_stop_minimizza.setEnabled(false);
+    button_generaSVG.setEnabled(true);
+    button_minimizza.setEnabled(true);
+  }
+
+  void textField_k_repulsive_actionPerformed(ActionEvent e) {
+
+  }
+
+  void button_k_attractive_mousePressed(MouseEvent e) {
+    graph.k_attratctive=(new Double(textField_k_actractive.getText())).doubleValue();
+  }
+
+  void button_k_attractive_actionPerformed(ActionEvent e) {
+
+  }
+
+  void button_k_repulsive_mousePressed(MouseEvent e) {
+   graph.k_repulsive=(new Double(textField_k_repulsive.getText())).doubleValue();
+  }
+
+
+}

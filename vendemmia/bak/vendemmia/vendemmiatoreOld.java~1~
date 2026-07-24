@@ -1,0 +1,547 @@
+package vendemmia;
+import java.io.*;
+import java.util.regex.*;
+import java.awt.*;
+
+/**
+ * <p>Title: Aladino</p>
+ * <p>Description: Apre una serie di sessioni telnet verso una lista di indirizzi ed esegue un insieme prestailito di comandi</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class vendemmiatore implements Runnable {
+  private registratore registratore_uno;
+  public Thread censitoreThread;
+  private long attesaRouter = 2000;
+  private lotteria lotteria_mia;
+  private configurazione conf;
+
+  private String promptWS;
+  private boolean ritornatiAllaWS;
+  private int tentativoPassw;
+  private int tentativoEnable;
+  TextArea messaggi;
+
+  public vendemmiatore(lotteria lotteria_mia, configurazione conf, TextArea messaggi) {
+    this.conf = conf;
+    this.lotteria_mia = lotteria_mia;
+    this.messaggi = messaggi;
+    censitoreThread = new Thread(this, "censitore");
+    censitoreThread.start();
+  } // Fine metodo costruttore di censitore
+
+
+  public void run() {
+    // while: nel caso in cui si perde la connessione con la WS si deve ricominciare
+      // connessione alla WS
+      registratore_uno = new registratore(conf.indirizzoWS, conf.portaWS, messaggi );
+      registratore_uno.registra();
+      registratore_uno.aspettaCaratteriTempo(3, 3000);
+      try {
+        registratore_uno.scrivi(conf.userWS);
+        registratore_uno.invio();
+      } catch (IOException e) {}
+      registratore_uno.aspettaCaratteriTempo(3, 3000);
+      try {
+        registratore_uno.scrivi(conf.passwWS);
+        registratore_uno.scrivi("\n");
+        registratore_uno.domande.flush();
+      } catch (IOException e) {}
+      promptWS = leggiPrompt();
+      messaggi.append("\n" +"Prompt della WS: " + promptWS);
+      //fine della connessione alla WS
+
+      //while da eseguire per tutti  gli indirizzi in lotteria
+      while (lotteria_mia.numeroIndirizziRestanti > 0) {
+        int indiceEstratto = lotteria_mia.estraiIndirizzo(messaggi);
+        capsulaIndirizzo estratto = ((capsulaIndirizzo) lotteria_mia.vettoreIndirizzi.get(indiceEstratto) );
+        String promptRouter = "";
+        int marcaInizioComandi = 0;
+        int marcaFineShTech = 0;
+        int marcaFineShRun = 0;
+        int avanzamento = 0; //indica l'avanzamento del "processo di censimento"
+        messaggi.append("\nStato di avanzamento del processo di censimento: ");//debug-----------
+        messaggi.append("\n" +avanzamento);//debug---------------------------------------------------
+        registratore_uno.visualizza = true;
+
+        ritornatiAllaWS = false;
+        tentativoPassw = 0;
+        tentativoEnable = 0;
+
+        String aperto = apriti(estratto.indirizzo);
+
+        if (aperto == "aperto") {
+          avanzamento = 1;
+          messaggi.append("\nStato di avanzamento del processo di censimento: ");//debug------------
+          messaggi.append("\n" +avanzamento);//debug----------------------------------------------------
+
+          boolean abilitato = abilita();
+
+          if (abilitato) {
+            avanzamento = 2;
+            messaggi.append("\nStato di avanzamento del processo di censimento: ");//debug---------
+            messaggi.append("\n" +avanzamento);//debug-------------------------------------------------
+
+            try {
+              //comandi da eseguire per ogni singolo router
+              registratore_uno.visualizza = false;
+
+              promptRouter += leggiPrompt();
+              int lunghezzaPromptRouter = promptRouter.length();
+
+              marcaInizioComandi = registratore_uno.bobina.length();
+
+//-----------------sh Tech----------------------------------------------------
+              registratore_uno.scrivi("show tech" + "\n");
+              registratore_uno.domande.flush();
+              registratore_uno.aspettaCaratteriTempo(10, attesaRouter);
+
+// -------------------aspetta che il comando termini il suo output------------
+              boolean comandoTerminato;
+              comandoTerminato = false;
+              int cicloRipetuto = 0;
+              while (!comandoTerminato) {
+                registratore_uno.aspettiamo(300);
+                int lungezzaBobina = registratore_uno.bobina.length();
+                String promptFinale = registratore_uno.bobina.substring(lungezzaBobina - lunghezzaPromptRouter, lungezzaBobina );
+                comandoTerminato = (promptFinale.compareTo(promptRouter)) == 0;
+                cicloRipetuto++;
+              }// fine del ciclo di attesa.
+              marcaFineShTech = registratore_uno.bobina.length();
+              messaggi.append("\n" +"\nsh tech terminato");
+
+//-----------------sh Running----------------------------------------------------
+              registratore_uno.scrivi("show running" + "\n");
+              registratore_uno.domande.flush();
+              registratore_uno.aspettaCaratteriTempo(3, attesaRouter);
+
+// -------------------aspetta che il comando termini il suo output------------
+              comandoTerminato = false;
+              cicloRipetuto = 0;
+              while (!comandoTerminato) {
+                registratore_uno.aspettiamo(300);
+                int lungezzaBobina = registratore_uno.bobina.length();
+                String promptFinale = registratore_uno.bobina.substring(lungezzaBobina - lunghezzaPromptRouter, lungezzaBobina );
+                comandoTerminato = (promptFinale.compareTo(promptRouter)) == 0;
+                cicloRipetuto++;
+              }// fine del ciclo di attesa.
+              marcaFineShRun = registratore_uno.bobina.length();
+              messaggi.append("\n" +"\nsh running terminato");
+
+
+//-----------------show cdp neighbors------------------------------------------------
+              registratore_uno.scrivi("show cdp neighbors" + "\n");
+              registratore_uno.domande.flush();
+              registratore_uno.aspettaCaratteriTempo(10, attesaRouter);
+
+//-----------------show cdp neighbors detail------------------------------------------
+              registratore_uno.scrivi("show cdp neighbors detail" + "\n");
+              registratore_uno.domande.flush();
+              registratore_uno.aspettaCaratteriTempo(10, attesaRouter);
+
+              //uscita dal router
+              registratore_uno.scrivi("quit" + "\n\n\n");
+
+              registratore_uno.domande.flush();
+              registratore_uno.aspettiamo(1000);
+
+// Verifica del ritorno al prompt della WS -----------------------------------------------
+              boolean siamoTornati = false;
+              registratore_uno.scrivi("\n");
+              messaggi.append("\n" +"\nVerifica prompt della WS");
+              int ripetuto = 0;
+              boolean esagerato = false;
+              while (!siamoTornati && !esagerato) {
+                registratore_uno.aspettiamo(3000);
+                messaggi.append("\n" +"\nCiclo vuoto all'interno di Verifica prompt della WS");//debug--?????????
+                messaggi.append("\n" +estratto.indirizzo);//Debug------------???????????????????????????????
+                registratore_uno.scrivi("\n");
+                registratore_uno.domande.flush();
+                int lunghezzaBobina = registratore_uno.bobina.length();
+                String promptWSfinale = registratore_uno.bobina.toString().substring(lunghezzaBobina - promptWS.length(), lunghezzaBobina);
+                String promptRouterFinale = registratore_uno.bobina.substring(lunghezzaBobina - lunghezzaPromptRouter, lunghezzaBobina );
+                messaggi.append("\n" +promptWSfinale);// debug------------------------------?????????
+                messaggi.append("\n" +promptWS);// debug------------------------------?????????
+                siamoTornati = (promptWSfinale.compareTo(promptWS)) == 0;
+                ripetuto++;
+                esagerato = ripetuto > 300;
+                if ( (ripetuto >= 5 && ripetuto%5 == 0)||(promptRouterFinale.compareTo(promptRouter) == 0) ) {
+                  registratore_uno.scrivi("\nquit\n");
+                  registratore_uno.domande.flush();
+                  messaggi.append("\n" +">>>>>>>>>>>> tentativo di uscita ridondato <<<<<<<<<<<");
+                }
+
+              }
+              if (!esagerato) {
+                messaggi.append("\n" +"\nSiamo usciti dall'attesa: Verifica prompt della WS");
+              } else {
+                messaggi.append("\n" +"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+                messaggi.append("\n" +"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+                messaggi.append("\n" +"EEEEEEE     non si è ritornati al prompt della WS     EEEEE");
+                messaggi.append("\n" +"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+                messaggi.append("\n" +"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+                Thread.currentThread().interrupt();
+              }
+// Verifica del ritorno al prompt della WS -----------------------------------------------
+
+            } catch (IOException e) {
+              messaggi.append("\n" +"Errore IO nell'eseguire i comandi");
+            }
+          }//end if (abilitato)
+          else {
+            lotteria_mia.rimettiInGioco(indiceEstratto, " enable passw non valida", messaggi);
+          }
+        }//end if (aperto)
+
+        else {
+          if (aperto == "telnetNonRiuscito") {
+            lotteria_mia.rimettiInGioco(indiceEstratto, " telnet non riuscito", messaggi);
+          } else {
+            lotteria_mia.rimettiInGioco(indiceEstratto, " login passw non valida", messaggi);
+          }
+        }
+
+
+
+        if (avanzamento == 2) {
+//********************************************** parte dedicata all'output ******************************
+//--------------------output sh tech ---------------------------------------------------
+          registratore_uno.aspettiamo();
+          String nomeFileShTech = conf.directoryShTech + "\\sh tech " + estratto.indirizzo + " " + promptRouter.substring(1, promptRouter.length() - 1) + ".txt";
+          String nomeFileShTech2 = conf.directoryShTech + "\\sh tech " + estratto.indirizzo + ".txt";
+          try {
+            boolean nomeFileScorretto = false;
+            BufferedWriter fileShTech = null;
+            try {
+              fileShTech = new BufferedWriter(new FileWriter(nomeFileShTech) );
+            } catch (IOException err) { nomeFileScorretto = true; }
+            if (nomeFileScorretto) {
+              fileShTech = new BufferedWriter(new FileWriter(nomeFileShTech2) );
+            }
+            fileShTech.write("================== inizio intestazione ===================================================");
+            fileShTech.newLine();
+            fileShTech.newLine();
+            try {
+              fileShTech.write("indirizzo di censimento: ");
+              fileShTech.write( ((capsulaIndirizzo) lotteria_mia.vettoreIndirizzi.get(indiceEstratto) ).indirizzo ) ;
+              fileShTech.newLine();
+              fileShTech.write("user: ");
+              if ( conf.utentiParoleLogIN[tentativoPassw - 1][0] != null) {
+                fileShTech.write( conf.utentiParoleLogIN[tentativoPassw - 1][0] );
+              }
+              fileShTech.newLine();
+              fileShTech.write("userPassw: ");
+              fileShTech.write( conf.utentiParoleLogIN[tentativoPassw - 1][1] );
+              fileShTech.newLine();
+              fileShTech.write("enablePassw: ");
+              fileShTech.write( conf.utentiParoleEnable[tentativoEnable -1] );
+            } catch (ArrayIndexOutOfBoundsException e)
+                {messaggi.append("\n" +"Errore di \"fuori indice\" nella scrittura dell'intestazione"); }
+            fileShTech.newLine();
+            fileShTech.newLine();
+            fileShTech.write("=================== fine intestazione ====================================================");
+            fileShTech.newLine();
+            fileShTech.newLine();
+            fileShTech.newLine();
+            //output del router >>>>>
+            fileShTech.write(registratore_uno.bobina.toString().substring(marcaInizioComandi, marcaFineShTech ) );
+            fileShTech.flush();
+            fileShTech.close();
+          } catch (IOException e) {
+            messaggi.append("\n" +"errore nella scrittura del file sh tech");
+            try {
+              lotteria_mia.scriviFileFalliti.write(estratto.indirizzo + " errore scrittura file" );
+              lotteria_mia.scriviFileFalliti.flush();
+              lotteria_mia.scriviFileFalliti.newLine();
+            } catch (IOException err) {}
+          }
+
+//--------------------output sh running ----------------------------------------------------
+          registratore_uno.aspettiamo();
+          String nomeFileShRun = conf.directoryShRun + "\\sh run " + estratto.indirizzo + " " + promptRouter.substring(1, promptRouter.length() - 1) + ".txt";
+          String nomeFileShRun2 = conf.directoryShRun + "\\sh run " + estratto.indirizzo + ".txt";
+          try {
+            BufferedWriter fileShRun = null;
+            boolean nomeFileScorretto = false;
+            try {
+              fileShRun = new BufferedWriter(new FileWriter(nomeFileShRun) );
+            } catch (IOException err) { nomeFileScorretto = true; }
+            if (nomeFileScorretto) {
+              fileShRun = new BufferedWriter(new FileWriter(nomeFileShRun2) );
+            }
+
+
+            fileShRun.write("================== inizio intestazione ===================================================");
+            fileShRun.newLine();
+            fileShRun.newLine();
+            try {
+              fileShRun.write("indirizzo di censimento: ");
+              fileShRun.write( ((capsulaIndirizzo) lotteria_mia.vettoreIndirizzi.get(indiceEstratto) ).indirizzo ) ;
+              fileShRun.newLine();
+              fileShRun.write("user: ");
+              if ( conf.utentiParoleLogIN[tentativoPassw - 1][0] != null) {
+                fileShRun.write( conf.utentiParoleLogIN[tentativoPassw - 1][0] );
+              }
+              fileShRun.newLine();
+              fileShRun.write("userPassw: ");
+              fileShRun.write( conf.utentiParoleLogIN[tentativoPassw - 1][1] );
+              fileShRun.newLine();
+              fileShRun.write("enablePassw: ");
+              fileShRun.write( conf.utentiParoleEnable[tentativoEnable -1] );
+            } catch (ArrayIndexOutOfBoundsException e)
+                {messaggi.append("\n" +"Errore di \"fuori indice\" nella scrittura dell'intestazione"); }
+            fileShRun.newLine();
+            fileShRun.newLine();
+            fileShRun.write("=================== fine intestazione ====================================================");
+            fileShRun.newLine();
+            fileShRun.newLine();
+            fileShRun.newLine();
+            //output del router >>>>>
+            fileShRun.write(registratore_uno.bobina.toString().substring(marcaFineShTech, marcaFineShRun ) );
+            fileShRun.flush();
+            fileShRun.close();
+          } catch (IOException e) {messaggi.append("\n" +"errore nella scrittura del file sh run"); }
+
+
+//--------------------output vinaccia ----------------------------------------------------
+          registratore_uno.aspettiamo();
+          String nomeFileVinaccia = conf.directoryVinaccia + "\\vinaccia" + estratto.indirizzo + " " + promptRouter.substring(1, promptRouter.length() - 1) + ".txt";
+          String nomeFileVinaccia2 = conf.directoryVinaccia + "\\vinaccia" + estratto.indirizzo + ".txt";
+          try {
+            BufferedWriter fileVinaccia = null;
+            boolean nomeFileScorretto = false;
+            try {
+              fileVinaccia = new BufferedWriter(new FileWriter(nomeFileVinaccia) );
+            } catch (IOException err) { nomeFileScorretto = true; }
+            if (nomeFileScorretto) {
+              fileVinaccia = new BufferedWriter(new FileWriter(nomeFileVinaccia2) );
+            }
+            fileVinaccia.write("================== inizio intestazione ===================================================");
+            fileVinaccia.newLine();
+            fileVinaccia.newLine();
+            try {
+              fileVinaccia.write("indirizzo di censimento: ");
+              fileVinaccia.write( ((capsulaIndirizzo) lotteria_mia.vettoreIndirizzi.get(indiceEstratto) ).indirizzo ) ;
+              fileVinaccia.newLine();
+              fileVinaccia.write("user: ");
+              if ( conf.utentiParoleLogIN[tentativoPassw - 1][0] != null) {
+                fileVinaccia.write( conf.utentiParoleLogIN[tentativoPassw - 1][0] );
+              }
+              fileVinaccia.newLine();
+              fileVinaccia.write("userPassw: ");
+              fileVinaccia.write( conf.utentiParoleLogIN[tentativoPassw - 1][1] );
+              fileVinaccia.newLine();
+              fileVinaccia.write("enablePassw: ");
+              fileVinaccia.write( conf.utentiParoleEnable[tentativoEnable -1] );
+            } catch (ArrayIndexOutOfBoundsException e)
+                {messaggi.append("\n" +"Errore di \"fuori indice\" nella scrittura dell'intestazione"); }
+            fileVinaccia.newLine();
+            fileVinaccia.newLine();
+            fileVinaccia.write("=================== fine intestazione ====================================================");
+            fileVinaccia.newLine();
+            fileVinaccia.newLine();
+            fileVinaccia.newLine();
+            //output del router >>>>>
+            fileVinaccia.write(registratore_uno.bobina.toString().substring(marcaInizioComandi ) );
+            fileVinaccia.flush();
+            fileVinaccia.close();
+          } catch (IOException e) {messaggi.append("\n" +"errore nella scrittura del file vinaccia"); }
+          lotteria_mia.visitatoConSuccesso(indiceEstratto, messaggi);
+//************************************** fine della parte dedicata all'output ******************************
+        } //end if (avanzamento == 2)
+
+        registratore_uno.riavvolgi();// per ogni router il registratore viene riavvolto
+
+      }//end while (lotteria_mia.numeroIndirizziRestanti > 0)
+
+    //comandi di chiusura:
+    registratore_uno.spegni();
+  }//end run()
+
+
+
+  public String leggiPrompt() {
+    registratore_uno.aspettiamo(3000);
+    String prompt;
+    try {
+      registratore_uno.scrivi("\n\n\n");
+      registratore_uno.domande.flush();
+      registratore_uno.aspettaCaratteriTempo(3, 10000);
+      int inizioPrompt = registratore_uno.bobina.length();
+      registratore_uno.scrivi("\n");
+      registratore_uno.domande.flush();
+      registratore_uno.aspettaCaratteriTempo(3, 10000);
+      String promptSporco = registratore_uno.bobina.toString().substring(inizioPrompt);
+      distillatore distillaPromptSporco = new distillatore(promptSporco);
+      prompt = distillaPromptSporco.prendiUltimaRiga();
+    } catch (IOException e) {prompt = null; }
+    return prompt;
+  }//fine leggiPromptWS()
+
+
+  public String apriti(String indirizzo) {
+    String risultato;
+    boolean siPuoProcedere = false;
+    boolean entrato = false;
+    boolean passFinite = false;
+    boolean telnetNonRiuscito = false;
+    registratore_uno.aspettiamo();
+    while (!passFinite && !telnetNonRiuscito && !entrato) {
+      try{
+        registratore_uno.scrivi("telnet " + indirizzo + "\n");
+        messaggi.append("\n" +"\niniziato telnet verso: " + indirizzo);
+        registratore_uno.domande.flush();//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        registratore_uno.aspettaCaratteriTempo(30,1000);
+      } catch (IOException e) {messaggi.append("\n" +"Errore IO in censitore durante il tentativo di telnet"); }
+
+      //aspetta fino a quando il router risponde con una richiesta di user o di password
+      int numeroAttese = 0;
+
+
+      boolean tornatiWS = false;
+      while (!siPuoProcedere && numeroAttese < 30 && !tornatiWS) {
+        try {
+          Thread.currentThread().sleep(1000);
+        } catch (InterruptedException e) {}
+        numeroAttese++;
+        siPuoProcedere = (richiestaUserPassw() != 3);
+        int lungBobina = registratore_uno.bobina.toString().length();
+        tornatiWS = promptWS == registratore_uno.bobina.toString().substring(lungBobina-promptWS.length(), lungBobina);
+      }//end while (!siPuoProcedere && numeroAttese < 30)
+      if (!siPuoProcedere) messaggi.append("\n" +"\nIl router non risponde al telnet");
+      //fine di: aspetta fino a quando il router risponde con una richiesta di user o di password
+      telnetNonRiuscito = !siPuoProcedere || tornatiWS;
+
+
+      if (!telnetNonRiuscito) {
+        int numPassword = conf.utentiParoleLogIN.length;
+        boolean connessioneClosed = false;
+        while (!passFinite && !entrato && !connessioneClosed) {
+          boolean richiestoUser = richiestaUserPassw() == 1; //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+          boolean userNonNull = conf.utentiParoleLogIN[tentativoPassw][0] != null;
+          if ( richiestoUser && userNonNull ) {
+            messaggi.append("\nTentativo di inserimento username numero: ");//debug---------------------
+            messaggi.append("\n" +tentativoPassw + 1);//debug-------------------------------------------------
+            try {
+              registratore_uno.scrivi(conf.utentiParoleLogIN[tentativoPassw][0] + "\n");
+              registratore_uno.domande.flush();//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+              registratore_uno.aspettaCaratteriTempo(3,1000);
+            } catch (IOException e) {messaggi.append("\n" +"Errore IO in Sesamo inserendo lo user");}
+          }
+          //boolean introduciPassw = (utentiParoleLogIN[tentativo][0] != null);
+          boolean richiestaPassw = richiestaUserPassw() == 2;//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+          boolean inseriamoPassword = richiestaPassw && ( (richiestoUser && userNonNull) || (!richiestoUser && !userNonNull) );
+          if ( inseriamoPassword ) {
+            messaggi.append("\nTentativo di inserimento password numero: ");//debug---------------------
+            messaggi.append("\n" +tentativoPassw + 1);//debug-------------------------------------------------
+            try {
+              registratore_uno.scrivi(conf.utentiParoleLogIN[tentativoPassw][1] + "\n");
+              registratore_uno.domande.flush();//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+              registratore_uno.aspettaCaratteriTempo(3,1000);
+            } catch (IOException e) {messaggi.append("\n" +"Errore IO in Sesamo inserendo la password");}
+          }
+          if ( richiestaUserPassw() == 3 /*ne user ne passw*/ ) {//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            messaggi.append("\n" +"\nVerifica della connessione alla console del router");
+            entrato = siamoEntrati();
+            if (!entrato) {
+              messaggi.append("\n" +"\nNon siamo connessi al terminale di un router");
+              connessioneClosed = true;
+              tentativoPassw--;
+            } else messaggi.append("\n" +"\nSiamo connessi al terminale di un router");
+          }
+          tentativoPassw++;
+          passFinite = numPassword <= tentativoPassw;
+        }//fine while (!passFinite && !entrato && !connessioneClosed)
+      }//end if if (!telnetNonRiuscito)
+    }//end while (!passFinite && !telnetNonRiuscito && !entrato)
+    if (telnetNonRiuscito) risultato = "telnetNonRiuscito";
+    else if (entrato) risultato = "aperto";
+    else if (passFinite) risultato = "passFinite";
+    else risultato = "incognito";
+    return risultato;
+  }//fine apriti()
+
+
+  public boolean abilita() {
+    boolean abilitato = false;
+    int numPassword = conf.utentiParoleEnable.length;
+    boolean passFinite = false;
+    while (!passFinite && !abilitato) {
+      try {
+        registratore_uno.scrivi("enable\n");
+        registratore_uno.domande.flush();//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        registratore_uno.aspettaCaratteriTempo(3,1000);
+      } catch (IOException e) {}
+      boolean nonVuolePassw = false;
+      while (!passFinite && !abilitato && !nonVuolePassw) {
+        boolean richiestaPassw = (richiestaUserPassw() == 2);//<<<<<<<<<<<<<<<
+        if (richiestaPassw) {
+          try {
+            registratore_uno.scrivi(conf.utentiParoleEnable[tentativoEnable] + "\n");
+            registratore_uno.domande.flush();//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            registratore_uno.aspettaCaratteriTempo(3,1000);
+          } catch (IOException e) {}
+        } else {
+          nonVuolePassw = true;
+          tentativoEnable--;
+        }
+        //registratore_uno.aspettiamo();//-- questa attesa si può eliminare --
+        tentativoEnable++;
+        char cancelletto = registratore_uno.bobina.charAt(registratore_uno.bobina.length() - 1);
+        if (cancelletto == '#') {return true; }
+        passFinite = numPassword <= tentativoEnable;
+      }//end while (!passFinite && !abilitato)
+    }//end while (!passFinite && !abilitato) {
+    return false;
+  }//fine abilita()
+
+
+  public boolean siamoEntrati() {
+    try {
+      //registratore_uno.aspettiamo();//--- questa attesa si può eliminare ---
+      int segnaLibro = registratore_uno.bobina.length() -1;
+      if (segnaLibro < 0) {segnaLibro = 0;}
+      registratore_uno.visualizza = false;
+      registratore_uno.scrivi("?" + "\n");
+      registratore_uno.domande.flush();
+      registratore_uno.aspettaCaratteriTempo(1,1000);
+      registratore_uno.visualizza = true;
+      String aiuto = registratore_uno.bobina.substring(segnaLibro);
+      Pattern aiutoPattern = Pattern.compile("Exec commands:");
+      Matcher aiutoMatcher = aiutoPattern.matcher(aiuto);
+      if (aiutoMatcher.find() ) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (IOException e) {
+      messaggi.append("\n" +"Errore IO nel metodo siamoEntrati di Sesamo");
+      return false;
+    }
+  }//fine di siamoEntrati
+
+  private int richiestaUserPassw() {
+    registratore_uno.aspettiamo();//--- questa attesa si può eliminare -----
+    String bobinaCompleta = registratore_uno.bobina.toString();
+    distillatore distillaBobinaCompleta = new distillatore(bobinaCompleta );
+    String ultimaRiga = distillaBobinaCompleta.prendiUltimaRiga();
+    //messaggi.append("\n" +ultimaRiga);//debug--------------------------------------------------------
+    Pattern userPattern = Pattern.compile("([Uu][Ss][Ee][Rr])|([Ll][Oo][Gg][Ii][Nn])");
+    Pattern passPattern = Pattern.compile("[Pp][Aa][Ss][Ss]");
+    Matcher userMatcher = userPattern.matcher(ultimaRiga );
+    Matcher passMatcher = passPattern.matcher(ultimaRiga );
+    boolean userBool = userMatcher.find();
+    boolean passBool = passMatcher.find();
+    if (userBool & !passBool ) {
+      return 1;
+    }
+    if (passBool ) {
+      return 2;
+    }
+    return 3;
+  } // fine private int richiestaUserPassw()
+
+}  // Fine class censitore

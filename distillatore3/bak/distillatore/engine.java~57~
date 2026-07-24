@@ -1,0 +1,174 @@
+package distillatore;
+import java.util.*;
+import java.io.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali contenute nei comandi Show dell'IOS</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.1
+ */
+
+public class engine {
+  Thread thread;
+  double meanCentrality;
+  rete rete;
+
+  public engine(rete rete) {
+    this.rete = rete;
+    rete.setLink();
+    initializeVectors();
+    convergence();
+    classifyCentrality();
+  }//end public void run()
+//##############################################################################
+
+  public void initializeVectors() {
+    Frame1.messaggi.append("\nInizializza vettori ");
+    for (int source=0; source<rete.nodiSignificativi.size(); source++) {
+      if (source%100==0&&source>0)
+        Frame1.messaggi.append("\n");
+      Frame1.messaggi.append("!");
+      nodo router = rete.Nodo(source);
+      for (int target=0; target<rete.nodiSignificativi.size(); target++) {
+        if (source==target) {
+          rete.Nodo(source).addVector(rete.Nodo(source), 0);
+        } else {
+          rete.Nodo(source).addVector(rete.Nodo(target), Double.MAX_VALUE/2);
+        }
+      }
+    }//end for (int i=0; i<numeroRouters; i++)
+
+    for (int i=0; i<rete.Links.size(); i++) {
+      if (i%100==0&&i>0)
+        Frame1.messaggi.append("\n");
+      Frame1.messaggi.append("!");
+
+      rete.link(i).source.vector(rete.nodiSignificativi.indexOf(rete.link(i).target)).nextHop=rete.link(i).target;
+      rete.link(i).source.vector(rete.nodiSignificativi.indexOf(rete.link(i).target)).distance=rete.link(i).distance;
+      rete.link(i).target.vector(rete.nodiSignificativi.indexOf(rete.link(i).source)).nextHop=rete.link(i).source;
+      rete.link(i).target.vector(rete.nodiSignificativi.indexOf(rete.link(i).source)).distance=rete.link(i).distance;
+    }//end for (int i=0; i<numeroLinks; i++)
+  }
+
+  void convergence() {
+    boolean updateTaken=true;
+    Frame1.messaggi.append("\n");
+    int stelline=1;
+    Frame1.messaggi.append("\nConvergence ");
+    while (updateTaken) {
+      Frame1.messaggi.append("*");
+      if (stelline%10==0)
+        Frame1.messaggi.append("\n");
+      updateTaken=false;
+      for (int i=0; i<rete.Links.size(); i++) {
+        for (int j=0;
+             j<rete.link(i).source.Vectors.size()&&
+             j<rete.link(i).target.Vectors.size();
+             j++)
+        {
+          if (rete.link(i).source.vector(j).distance + rete.link(i).distance<
+              rete.link(i).target.vector(j).distance )
+          {
+            rete.link(i).target.vector(j).distance=
+              rete.link(i).source.vector(j).distance + rete.link(i).distance;
+            rete.link(i).target.vector(j).nextHop=rete.link(i).source;
+            updateTaken=true;
+          }//end if --> update da source a target
+          if (rete.link(i).target.vector(j).distance + rete.link(i).distance<
+              rete.link(i).source.vector(j).distance )
+          {
+            rete.link(i).source.vector(j).distance=
+              rete.link(i).target.vector(j).distance + rete.link(i).distance;
+            rete.link(i).source.vector(j).nextHop=rete.link(i).target;
+            updateTaken=true;
+          }//end if <-- update da target a source
+        }//end for
+      }//end for (int i=0; i<rete.links.size(); i++)
+    }//end while (updateTaken)
+    Frame1.messaggi.append("\ntabelle completate");
+    for (int i=0; i<rete.nodiSignificativi.size(); i++) {
+      System.out.print(rete.Nodo(i).nome);
+      double totale=0;
+      int denominatore=0;
+      for (int j=0; j<rete.Nodo(i).Vectors.size(); j++) {
+        System.out.print("!");
+        if (rete.Nodo(i).vector(j).distance<Double.MAX_VALUE/2) {
+          totale+=rete.Nodo(i).vector(j).distance;
+          denominatore++;
+        }
+      }
+      System.out.println("");
+      double media = totale/denominatore;
+      rete.Nodo(i).centrality=media;
+      if (media<rete.minCentrality) rete.minCentrality=media;
+      if (media>rete.maxCentrality) rete.maxCentrality=media;
+    }
+  }//end void convergence()
+
+
+  private ArrayList mostCentral = new ArrayList();
+  void classifyCentrality() {
+    mostCentral.clear();
+    mostCentral.add(rete.Nodo(0));
+    for (int i=1; i<rete.nodiSignificativi.size(); i++) {
+      boolean classificato=false;
+      int indice_inferiore=0;
+      int indice_superiore=mostCentral.size();
+      int indice_medio=(indice_superiore+indice_inferiore)/2;
+      while (!classificato) {
+        if (indice_superiore-indice_inferiore<=1) {
+          if ( rete.Nodo(i).centrality<mostCentral(indice_inferiore).centrality ) {
+            mostCentral.add(indice_inferiore, rete.Nodo(i));
+            classificato=true;
+          } else {
+            mostCentral.add(indice_superiore, rete.Nodo(i));
+            classificato=true;
+          }
+        } else {
+          indice_medio=(indice_superiore+indice_inferiore)/2;
+          if (rete.Nodo(i).centrality<mostCentral(indice_medio).centrality ) {
+            indice_superiore=indice_medio;
+          } else {
+            indice_inferiore=indice_medio;
+          }
+        }
+      }//end while (!classificato)
+    }//end (int i=0; i<Nodes.size(); i++)
+  }
+  nodo mostCentral(int i) {
+    return (nodo) mostCentral.get(i);
+  }
+
+  public void scriviElencoHTML(String nomeFile) {
+    try {
+      BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile));
+      uscita.write("<html>");
+      uscita.newLine();
+      uscita.write("<head><TITLE>Network Analysis (by Faustino Palma CCIE#8959)</TITLE></head>");
+      uscita.newLine();
+      uscita.write("<body>");
+      uscita.newLine();
+      uscita.write("<table border=\"0\">");
+      uscita.newLine();
+      uscita.write("<tr><td>Riferimento</td><td>Distanza media</td></tr>");
+      uscita.newLine();
+      for (int indice=0; indice<mostCentral.size(); indice++) {
+        if (!(mostCentral(indice).riferimento.indexOf("Network")!=-1)) {
+          uscita.write("<tr><td><a href=\""+mostCentral(indice).riferimento+"\">"
+                      +mostCentral(indice).nome+"</a></td><td>"
+                      +mostCentral(indice).centrality+"</td></tr>");
+          uscita.newLine();
+        }
+      }
+      uscita.write("</table>");
+      uscita.newLine();
+      uscita.write("</body>");
+      uscita.newLine();
+      uscita.write("</html>");
+      uscita.close();
+    } catch (IOException e) {Frame1.messaggi.append("\n" +"errore in scriviElencoHTML");}
+  }
+}

@@ -1,0 +1,1169 @@
+package distillatore;
+
+import java.util.*;
+import java.io.*;
+import java.awt.*;
+
+import org.w3c.dom.*;
+import javax.xml.parsers.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.*;
+import javax.xml.transform.stream.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class rete {
+  TextArea messaggi = new TextArea();
+  public ArrayList nodi = new ArrayList();
+  public int numeroNodi = 0;
+  public ArrayList pseudoNodi = new ArrayList();
+  public int numeroPseudoNodi = 0;
+  public int numeroVirtualnode = 0;
+  boolean flag_dialer_map = false;
+  public ArrayList dialer_map_number = new ArrayList();
+  String dialer_map_number(int i) {
+    return (String) dialer_map_number.get(i);
+  }
+
+  public ArrayList dialer_map_address = new ArrayList();
+  String dialer_map_address(int i) {
+    return (String) dialer_map_address.get(i);
+  }
+
+  public ArrayList dialer_map_name = new ArrayList();
+  String dialer_map_name(int i) {
+    return (String) dialer_map_name.get(i);
+  }
+
+  double minCentrality = Double.MAX_VALUE;
+  double maxCentrality = 0;
+
+  public rete() {
+  }
+
+  public nodo nodo(int indice) {
+    return (nodo) nodi.get(indice);
+  }
+
+  public nodo pseudoNodo(int indice) {
+    return (nodo) pseudoNodi.get(indice);
+  }
+
+  public String prossimoIdentificativo() {
+    return "Router_" + String.valueOf(numeroNodi + 1);
+  }
+
+  public void aggiungiNodo(nodo nodo) {
+    nodo.identificativo = "Router_" + String.valueOf(numeroNodi + 1);
+    nodo.riferimento = ".\\Topologia\\" + nodo.identificativo + ".html";
+    for (int i = 0; i < nodo.collegamenti.size(); i++) {
+      boolean pseudoNodoPresente = false;
+      for (int j = 0; j < numeroPseudoNodi; j++) {
+        boolean corrisponde = nodo.collegamento(i).confrontaCollegamenti(
+            pseudoNodo(j).collegamento(0)) &&
+            nodo.collegamento(i).verificaMask(pseudoNodo(j).collegamento(0));
+        if (corrisponde) {
+          pseudoNodoPresente = true;
+        }
+      }
+      if (!pseudoNodoPresente) {
+        nodo newPseudoNodo = new nodo("Network_" +
+                                      String.valueOf(numeroPseudoNodi + 1),
+                                      messaggi);
+        newPseudoNodo.identificativo = "Network_" +
+            String.valueOf(numeroPseudoNodi + 1);
+        newPseudoNodo.riferimento = ".\\Topologia\\" +
+            newPseudoNodo.identificativo + ".html";
+        newPseudoNodo.aggiungiCollegamento("rete",
+                                           nodo.collegamento(i).indirizzo(),
+                                           nodo.collegamento(i).mask());
+        newPseudoNodo.collegamento(0).tipoLink = nodo.collegamento(i).tipoLink;
+        newPseudoNodo.collegamento(0).indirizzo.and(newPseudoNodo.collegamento(
+            0).mask);
+        boolean maggioreTrovato = false;
+        int posizioneInserimento = 0;
+        while (!maggioreTrovato && (posizioneInserimento < numeroPseudoNodi)) {
+          collegamentoIP daConfrontare = ( (nodo) pseudoNodi.get(
+              posizioneInserimento)).collegamento(0);
+          maggioreTrovato = newPseudoNodo.collegamento(0).minore(daConfrontare);
+          posizioneInserimento++;
+        }
+//      corregge il nome dello PseudoNodo
+        newPseudoNodo.nome = newPseudoNodo.collegamento(0).indirizzo() +
+            newPseudoNodo.collegamento(0).barraMask();
+        if (maggioreTrovato) {
+          pseudoNodi.add(posizioneInserimento - 1, newPseudoNodo);
+        }
+        else {
+          pseudoNodi.add(newPseudoNodo);
+        }
+        nodiSignificativi.add(newPseudoNodo);
+        numeroPseudoNodi = pseudoNodi.size();
+      }
+    }
+    nodo.indiceNodo = numeroNodi;
+    for (int i = 0; i < numeroPseudoNodi; i++) {
+      collegaNodi(nodo, pseudoNodo(i));
+    }
+    nodi.add(nodo);
+    nodiSignificativi.add(nodo);
+    numeroNodi = nodi.size();
+  }
+
+  public void collegaNodi(nodo nodoUno, nodo nodoDue) {
+    for (int i = 0; i < nodoUno.collegamenti.size(); i++) {
+      for (int j = 0; j < nodoDue.collegamenti.size(); j++) {
+        boolean collegatiIP = nodoUno.collegamento(i).confrontaCollegamenti(
+            nodoDue.collegamento(j))
+            ||
+            nodoDue.collegamento(j).confrontaCollegamenti(nodoUno.
+            collegamento(i));
+        boolean maskDiversa = !nodoUno.collegamento(i).verificaMask(nodoDue.
+            collegamento(j));
+        boolean notShutDown = true;
+        if (nodoUno.collegamento(i).shutdown != null) {
+          notShutDown = notShutDown &&
+              nodoUno.collegamento(i).shutdown.indexOf("shutdown") == -1;
+        }
+        if (nodoDue.collegamento(j).shutdown != null) {
+          notShutDown = notShutDown &&
+              nodoDue.collegamento(j).shutdown.indexOf("shutdown") == -1;
+        }
+        if (collegatiIP && notShutDown) {
+          nodoUno.collegamento(i).aggiungiVicino(nodoDue,
+                                                 nodoDue.collegamento(j),
+                                                 nodoDue.nome,
+                                                 nodoDue.collegamento(j).
+                                                 indirizzo(),
+                                                 nodoDue.identificativo,
+                                                 nodoDue.indiceNodo, j,
+                                                 maskDiversa,
+                                                 nodoDue.collegamento(j).
+                                                 tipoLink);
+          nodoDue.collegamento(j).aggiungiVicino(nodoUno,
+                                                 nodoUno.collegamento(i),
+                                                 nodoUno.nome,
+                                                 nodoUno.collegamento(i).
+                                                 indirizzo(),
+                                                 nodoUno.identificativo,
+                                                 nodoUno.indiceNodo, i,
+                                                 maskDiversa,
+                                                 nodoUno.collegamento(i).
+                                                 tipoLink);
+          nodoUno.collegamento(i).ultimo_vicino().riflesso = nodoDue.
+              collegamento(j).ultimo_vicino();
+          nodoDue.collegamento(j).ultimo_vicino().riflesso = nodoUno.
+              collegamento(i).ultimo_vicino();
+        }
+      }
+    }
+  }
+
+  public void collegaTuttiDialer() {
+    for (int i = 0; i < nodi.size() - 1; i++) {
+      for (int j = i + 1; j < nodi.size(); j++) {
+        collegaDialer(nodo(i), nodo(j));
+      }
+    }
+  }
+
+  public void collegaDialer(nodo nodoUno, nodo nodoDue) {
+    for (int i = 0; i < nodoUno.collegamentiDial.size(); i++) {
+      for (int j = 0; j < nodoDue.collegamentiDial.size(); j++) {
+        boolean maskDiversa = !nodoUno.collegamentoDial(i).verificaMask(nodoDue.
+            collegamentoDial(j));
+        for (int h = 0; h < nodoUno.collegamentoDial(i).vicini.size(); h++) {
+          if (nodoUno.collegamentoDial(i).vicino(h).dialer_number.compareTo("") !=
+              0) {
+            for (int k = 0; k < dialer_map_number.size(); k++) {
+              if (nodoUno.collegamentoDial(i).vicino(h).dialer_number.compareTo(
+                  dialer_map_number(k)) == 0
+                  &&
+                  nodoDue.collegamentoDial(j).indirizzo().compareTo(
+                  dialer_map_address(k)) == 0
+                  /*&& (dialer_map_name[k].compareTo("")==0
+                  || dialer_map_name[k].compareTo(nodoDue.nome)==0)*/) { //collega nodi>>>>>>>>>>>>>>>>>>>
+                boolean notShutDown = true;
+                if (nodoUno.collegamentoDial(i).shutdown != null) {
+                  notShutDown = notShutDown &&
+                      nodoUno.collegamentoDial(i).shutdown.indexOf("shutdown") ==
+                      -1;
+                }
+                if (nodoDue.collegamentoDial(j).shutdown != null) {
+                  notShutDown = notShutDown &&
+                      nodoDue.collegamentoDial(j).shutdown.indexOf("shutdown") ==
+                      -1;
+                }
+                if (notShutDown || true) {
+                  nodoUno.collegamentoDial(i).vicino(h).nodoObject = nodoDue;
+                  nodoUno.collegamentoDial(i).vicino(h).collegamentoVicino =
+                      nodoDue.collegamentoDial(j);
+                  nodoUno.collegamentoDial(i).vicino(h).HostName = nodoDue.nome;
+                  nodoUno.collegamentoDial(i).vicino(h).IPaddress = nodoDue.
+                      collegamentoDial(j).indirizzo();
+                  nodoUno.collegamentoDial(i).vicino(h).identificativo =
+                      nodoDue.
+                      identificativo;
+                  nodoUno.collegamentoDial(i).vicino(h).indiceNodo = nodoDue.
+                      indiceNodo;
+                  nodoUno.collegamentoDial(i).vicino(h).maskDiversa =
+                      maskDiversa;
+                  nodoUno.collegamentoDial(i).vicino(h).tipoLink = nodoDue.
+                      collegamentoDial(j).tipoLink;
+                  nodoDue.collegamentoDial(j).aggiungiVicino(nodoUno,
+                      nodoUno.collegamentoDial(i), nodoUno.nome,
+                      nodoUno.collegamentoDial(i).indirizzo(),
+                      nodoUno.identificativo,
+                      nodoUno.indiceNodo, i, maskDiversa,
+                      nodoUno.collegamentoDial(i).tipoLink);
+                  nodoUno.collegamentoDial(i).ultimo_vicino().riflesso =
+                      nodoDue.
+                      collegamentoDial(j).ultimo_vicino();
+                  nodoDue.collegamentoDial(j).ultimo_vicino().riflesso =
+                      nodoUno.
+                      collegamentoDial(i).ultimo_vicino();
+                }
+              } //fine di collega nodi<<<<<<<<<<<
+            }
+          }
+        }
+        for (int h = 0; h < nodoDue.collegamentoDial(j).vicini.size(); h++) {
+          if (nodoDue.collegamentoDial(j).vicino(h).dialer_number.compareTo("") !=
+              0) {
+            for (int k = 0; k < dialer_map_number.size(); k++) {
+              if (nodoDue.collegamentoDial(j).vicino(h).dialer_number.compareTo(
+                  dialer_map_number(k)) == 0
+                  &&
+                  nodoUno.collegamentoDial(i).indirizzo().compareTo(
+                  dialer_map_address(k)) == 0
+                  /*&& (dialer_map_name[k].compareTo("")==0
+                  || dialer_map_name[k].compareTo(nodoUno.nome)==0)*/) { //collega nodi>>>>>>>>>>>>>>>>>>>
+                nodoDue.collegamentoDial(j).vicino(h).nodoObject = nodoUno;
+                nodoDue.collegamentoDial(j).vicino(h).collegamentoVicino =
+                    nodoUno.collegamentoDial(i);
+                nodoDue.collegamentoDial(j).vicino(h).HostName = nodoUno.nome;
+                nodoDue.collegamentoDial(j).vicino(h).IPaddress = nodoUno.
+                    collegamentoDial(i).indirizzo();
+                nodoDue.collegamentoDial(j).vicino(h).identificativo = nodoUno.
+                    identificativo;
+                nodoDue.collegamentoDial(j).vicino(h).indiceNodo = nodoUno.
+                    indiceNodo;
+                nodoDue.collegamentoDial(j).vicino(h).maskDiversa = maskDiversa;
+                nodoDue.collegamentoDial(j).vicino(h).tipoLink = nodoUno.
+                    collegamentoDial(i).tipoLink;
+                nodoUno.collegamentoDial(i).aggiungiVicino(nodoDue,
+                    nodoDue.collegamentoDial(j), nodoDue.nome,
+                    nodoDue.collegamentoDial(j).indirizzo(),
+                    nodoDue.identificativo,
+                    nodoDue.indiceNodo, j, maskDiversa,
+                    nodoDue.collegamentoDial(j).tipoLink);
+                nodoUno.collegamentoDial(i).ultimo_vicino().riflesso = nodoDue.
+                    collegamentoDial(j).ultimo_vicino();
+                nodoDue.collegamentoDial(j).ultimo_vicino().riflesso = nodoUno.
+                    collegamentoDial(i).ultimo_vicino();
+              } //fine di collega nodi<<<<<<<<<<<
+            }
+          }
+        }
+      }
+    }
+  }
+
+  public void semplificaCollegamenti() {
+    for (int i = 0; i < numeroPseudoNodi; i++) {
+      if (pseudoNodo(i).collegamento(0).numeroVicini == 1) {
+        //System.out.println(pseudoNodo(i).inTabella().distendiVerticale());
+        int indiceNodo = pseudoNodo(i).collegamento(0).vicino(0).indiceNodo;
+        int indiceCollegamento = pseudoNodo(i).collegamento(0).vicino(0).
+            indiceCollegamentoNodo;
+        try {
+          nodo(indiceNodo).collegamento(indiceCollegamento).vicini.remove(
+              pseudoNodo(i).collegamento(0).vicino(0).riflesso);
+        }
+        catch (IndexOutOfBoundsException err) {
+          System.err.println(err);
+        }
+        nodiSignificativi.remove(pseudoNodo(i));
+      }
+      if (pseudoNodo(i).collegamento(0).numeroVicini == 2 /* &&
+          pseudoNodo(i).collegamento(0).vicino(0).indiceNodo!=
+          pseudoNodo(i).collegamento(0).vicino(1).indiceNodo*/) {
+        //System.out.println(pseudoNodo(i).inTabella().distendiVerticale());
+        int indiceNodo_a = pseudoNodo(i).collegamento(0).vicino(0).indiceNodo;
+        int indiceCollegamento_a = pseudoNodo(i).collegamento(0).vicino(0).
+            indiceCollegamentoNodo;
+        int indiceNodo_b = pseudoNodo(i).collegamento(0).vicino(1).indiceNodo;
+        int indiceCollegamento_b = pseudoNodo(i).collegamento(0).vicino(1).
+            indiceCollegamentoNodo;
+        nodo(indiceNodo_a).collegamento(indiceCollegamento_a).vicini.remove(
+            pseudoNodo(i).collegamento(0).vicino(0).riflesso);
+        nodo(indiceNodo_b).collegamento(indiceCollegamento_b).vicini.remove(
+            pseudoNodo(i).collegamento(0).vicino(1).riflesso);
+
+        if (nodo(indiceNodo_a).collegamento(indiceCollegamento_a).vicini.size() ==
+            0 &&
+            nodo(indiceNodo_b).collegamento(indiceCollegamento_b).vicini.size() ==
+            0) {
+          //collegaNodi(nodo(indiceNodo_a), nodo(indiceNodo_b));
+
+          boolean maskDiversa = !nodo(indiceNodo_a).collegamento(
+              indiceCollegamento_a)
+              .verificaMask(nodo(indiceNodo_b).collegamento(
+              indiceCollegamento_b));
+
+          nodo(indiceNodo_a).collegamento(indiceCollegamento_a)
+              .aggiungiVicino(nodo(indiceNodo_b),
+                              nodo(indiceNodo_b).
+                              collegamento(indiceCollegamento_b),
+                              nodo(indiceNodo_b).nome,
+                              nodo(indiceNodo_b).
+                              collegamento(indiceCollegamento_b).indirizzo(),
+                              nodo(indiceNodo_b).identificativo,
+                              nodo(indiceNodo_b).indiceNodo, indiceNodo_b,
+                              maskDiversa,
+                              nodo(indiceNodo_b).collegamento(
+              indiceCollegamento_b).
+                              tipoLink);
+
+          nodo(indiceNodo_b).collegamento(indiceCollegamento_b)
+              .aggiungiVicino(nodo(indiceNodo_a),
+                              nodo(indiceNodo_a).
+                              collegamento(indiceCollegamento_a),
+                              nodo(indiceNodo_a).nome,
+                              nodo(indiceNodo_a).
+                              collegamento(indiceCollegamento_a).indirizzo(),
+                              nodo(indiceNodo_a).identificativo,
+                              nodo(indiceNodo_a).indiceNodo, indiceNodo_a,
+                              maskDiversa,
+                              nodo(indiceNodo_a).collegamento(
+              indiceCollegamento_a).
+                              tipoLink);
+          nodo(indiceNodo_a).collegamento(indiceCollegamento_a).ultimo_vicino().
+              riflesso = nodo(indiceNodo_b).collegamento(indiceCollegamento_b).
+              ultimo_vicino();
+          nodo(indiceNodo_b).collegamento(indiceCollegamento_b).ultimo_vicino().
+              riflesso = nodo(indiceNodo_a).collegamento(indiceCollegamento_a).
+              ultimo_vicino();
+          nodiSignificativi.remove(pseudoNodo(i));
+        }
+      }
+    }
+  }
+
+  public ArrayList nodiSignificativi = new ArrayList();
+  public void addNodoSignificativo(nodo nodoEffettivo) {
+    nodiSignificativi.add(nodoEffettivo);
+  }
+
+  public nodo Nodo(int indice) {
+    return (nodo) nodiSignificativi.get(indice);
+  }
+
+//------------------------------------------------------------------------------
+  public ArrayList Links = new ArrayList();
+  private class link {
+    nodo source;
+    nodo target;
+    collegamentoIP link_target;
+    collegamentoIP link_source;
+    double distance;
+  } //end class Links
+
+  void addLink(nodo source, collegamentoIP link_source, nodo target,
+               collegamentoIP link_target, double distance) {
+    link link = new link();
+    link.source = source;
+    link.target = target;
+    link.distance = distance;
+    link.link_source = link_source;
+    link.link_target = link_target;
+    Links.add(link);
+  }
+
+  link link(int indice) {
+    return (link) Links.get(indice);
+  }
+
+  link lastLink() {
+    return (link) Links.get(Links.size() - 1);
+  }
+
+//******************************************************************************
+//******************************************************************************
+//******************************************************************************
+  public void setLink() {
+    for (int indice = 0; indice < nodiSignificativi.size(); indice++) {
+      for (int h = 0; h < Nodo(indice).collegamenti.size(); h++) {
+        for (int k = 0; k < Nodo(indice).collegamento(h).vicini.size(); k++) {
+          if (Nodo(indice).identificativo.compareTo(
+              Nodo(indice).collegamento(h).vicino(k).identificativo) > 0) {
+            nodo nodoVicino = Nodo(indice).collegamento(h).vicino(k).nodoObject;
+            //if (nodiSignificativi.indexOf(nodoVicino)!=-1)
+            addLink(Nodo(indice), Nodo(indice).collegamento(h), nodoVicino,
+                    Nodo(indice).collegamento(h).vicino(k).collegamentoVicino,
+                    distance(Nodo(indice), Nodo(indice).collegamento(h), k));
+          }
+        }
+      }
+      for (int h = 0; h < Nodo(indice).collegamentiDial.size(); h++) {
+        for (int k = 0; k < Nodo(indice).collegamentoDial(h).vicini.size(); k++) {
+          if (Nodo(indice).identificativo.compareTo(
+              Nodo(indice).collegamentoDial(h).vicino(k).identificativo) > 0) {
+            nodo nodoVicino = Nodo(indice).collegamentoDial(h).vicino(k).
+                nodoObject;
+            //if (nodiSignificativi.indexOf(nodoVicino)!=-1)
+            addLink(Nodo(indice), Nodo(indice).collegamentoDial(h), nodoVicino,
+                    Nodo(indice).collegamentoDial(h).vicino(k).
+                    collegamentoVicino,
+                    distance(Nodo(indice), Nodo(indice).collegamentoDial(h), k));
+          }
+        }
+      }
+    }
+  }
+
+  public ArrayList orderedLinks = new ArrayList();
+  link orderedLink(int indice) {
+    return (link) orderedLinks.get(indice);
+  }
+
+  void orderLinks() {
+    if (link(0).source.centrality > link(0).target.centrality) {
+      nodo tempLink = link(0).source;
+      link(0).source = link(0).target;
+      link(0).target = tempLink;
+    }
+    orderedLinks.clear();
+    orderedLinks.add(link(0));
+    for (int i = 1; i < Links.size(); i++) {
+      if (link(i).source.centrality > link(i).target.centrality) {
+        nodo tempLink = link(i).source;
+        link(i).source = link(i).target;
+        link(i).target = tempLink;
+      }
+      boolean classificato = false;
+      int indice_inferiore = 0;
+      int indice_superiore = orderedLinks.size();
+      int indice_medio = (indice_superiore + indice_inferiore) / 2;
+      while (!classificato) {
+        if (indice_superiore - indice_inferiore <= 1) {
+          if (link(i).source.centrality <
+              orderedLink(indice_inferiore).source.centrality) {
+            orderedLinks.add(indice_inferiore, link(i));
+            classificato = true;
+          }
+          else {
+            orderedLinks.add(indice_superiore, link(i));
+            classificato = true;
+          }
+        }
+        else {
+          indice_medio = (indice_superiore + indice_inferiore) / 2;
+          if (link(i).source.centrality <
+              orderedLink(indice_medio).source.centrality) {
+            indice_superiore = indice_medio;
+          }
+          else {
+            indice_inferiore = indice_medio;
+          }
+        }
+      } //end while (!classificato)
+    } //end (int i=0; i<Nodes.size(); i++)
+  }
+
+//******************************************************************************
+//******************************************************************************
+//******************************************************************************
+     private long distance(nodo nodoAttuale, collegamentoIP collegamento,
+                           int vicino) {
+       int j = vicino;
+       String tipoLink;
+       if (collegamento.tipoLink.compareTo(collegamento.vicino(j).tipoLink) ==
+           0) {
+         tipoLink = collegamento.tipoLink;
+       }
+       else {
+         tipoLink = collegamento.tipoLink + collegamento.vicino(j).tipoLink;
+       }
+       long distance;
+
+       if (tipoLink.compareTo("Fas") == 0) {
+         distance = 100;
+       }
+       else if (tipoLink.compareTo("Eth") == 0) {
+         distance = 100;
+       }
+       else if (tipoLink.compareTo("EthFas") == 0) {
+         distance = 100;
+       }
+       else if (tipoLink.compareTo("FasEth") == 0) {
+         distance = 100;
+       }
+       else if (tipoLink.compareTo("Tok") == 0) {
+         distance = 100;
+       }
+       else if (tipoLink.compareTo("BRI") == 0) {
+         distance = 100000;
+       }
+       else if (tipoLink.compareTo("Dia") == 0) {
+         distance = 100000;
+       }
+       else if (tipoLink.compareTo("Tun") == 0) {
+         distance = 1000000;
+       }
+       else {
+         distance = 10000;
+       }
+       return distance;
+     }
+
+//------------------------------------------------------------------------------
+
+//OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT
+//OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT
+//OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT_OUTPUT
+  public void scriviFileSeparati(String nomeFile) {
+    try {
+      BufferedWriter uscitaNetworks = new BufferedWriter(new FileWriter(
+          nomeFile + "\\Network.html"));
+      uscitaNetworks.write("<html><body>");
+      for (int indice = 0; indice < numeroNodi; indice++) {
+        nodo nodoAttuale = (nodo) nodi.get(indice);
+        BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile +
+            "\\" + nodoAttuale.identificativo + ".html"));
+        uscita.write("<html>");
+        uscita.newLine();
+        uscita.write(
+            "<head><TITLE>Network Analysis (by Faustino Palma CCIE#8959)</TITLE></head>");
+        uscita.newLine();
+        uscita.write("<body>");
+        nodoAttuale.uscita = uscita;
+        nodoAttuale.stampaHTML();
+        uscita.write("</body>");
+        uscita.write("</html>");
+        uscita.close();
+      }
+      for (int indice = 0; indice < numeroPseudoNodi; indice++) {
+        nodo nodoAttuale = (nodo) pseudoNodi.get(indice);
+        BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile +
+            "\\" + nodoAttuale.identificativo + ".html"));
+        uscita.write("<html>");
+        uscita.newLine();
+        uscita.write(
+            "<head><TITLE>Network Analysis (by Faustino Palma CCIE#8959)</TITLE></head>");
+        uscita.newLine();
+        uscita.write("<body>");
+        nodoAttuale.uscita = uscita;
+        nodoAttuale.stampaHTML();
+        uscita.write("</body>");
+        uscita.write("</html>");
+        uscita.close();
+        nodoAttuale.uscita = uscitaNetworks;
+        nodoAttuale.stampaHTML();
+        uscitaNetworks.write("<p></p><p></p>");
+      }
+      uscitaNetworks.write("</body></html>");
+      uscitaNetworks.close();
+    }
+    catch (IOException e) {
+      messaggi.append("\n" + "errore in scriviFile");
+    }
+  }
+
+  public void scriviFileIndirizzamento(String nomeFile) {
+    try {
+      BufferedWriter uscitaNetworks = new BufferedWriter(new FileWriter(
+          nomeFile + "\\Indirizzamento.html"));
+      uscitaNetworks.write("<html><body>");
+      uscitaNetworks.newLine();
+      uscitaNetworks.write("<table border=\"1\">");
+      uscitaNetworks.newLine();
+      for (int indice = 0; indice < numeroPseudoNodi; indice++) {
+        nodo nodoAttuale = (nodo) pseudoNodi.get(indice);
+        uscitaNetworks.newLine();
+        uscitaNetworks.write("<tr><td valign=\"top\"><a name=\"" +
+                             nodoAttuale.identificativo + "\"></a><a href=\"" +
+                             nomeFile + "\\" + nodoAttuale.identificativo +
+                             ".html" + "\">" + nodoAttuale.nome +
+                             "</a></td></tr>");
+        uscitaNetworks.newLine();
+        uscitaNetworks.write("<p></p><p></p>");
+      }
+      uscitaNetworks.newLine();
+      uscitaNetworks.write("</table>");
+      uscitaNetworks.newLine();
+      uscitaNetworks.write("</body></html>");
+      uscitaNetworks.close();
+    }
+    catch (IOException e) {
+      messaggi.append("\n" + "errore in scriviFile");
+    }
+  }
+
+  public void scriviFileXML(String nomeFile) {
+    try {
+      DocumentBuilderFactory fabbricaCostruttori = DocumentBuilderFactory.
+          newInstance();
+      DocumentBuilder costruttoreDocumenti = fabbricaCostruttori.
+          newDocumentBuilder();
+      Document topologiaXML = costruttoreDocumenti.newDocument();
+      Element radice = topologiaXML.createElement("Topology");
+      topologiaXML.appendChild(radice);
+      Element nodes = topologiaXML.createElement("Nodes");
+      nodes.setAttribute("id", "Nodes");
+      radice.appendChild(nodes);
+      Element links = topologiaXML.createElement("Links");
+      links.setAttribute("id", "Links");
+      radice.appendChild(links);
+      for (int indice = 0; indice < numeroNodi; indice++) {
+        nodo nodoAttuale = (nodo) nodi.get(indice);
+        Element node = topologiaXML.createElement("node");
+        node.setAttribute("name", nodoAttuale.nome);
+        node.setAttribute("id", nodoAttuale.identificativo);
+        node.setAttribute("riferimento", nodoAttuale.riferimento);
+        for (int i = 0; i < nodoAttuale.collegamenti.size(); i++) {
+          if (nodoAttuale.collegamento(i).shutdown.indexOf("shutdown") == -1) {
+            for (int j = 0; j < nodoAttuale.collegamento(i).vicini.size(); j++) {
+              if (nodoAttuale.identificativo.compareTo(
+                  nodoAttuale.collegamento(i).vicino(j).identificativo) > 0) {
+                Element link = topologiaXML.createElement("link");
+                link.setAttribute("source", nodoAttuale.identificativo);
+                link.setAttribute("target",
+                                  nodoAttuale.collegamento(i).vicino(j).
+                                  identificativo);
+                String tipoLink;
+                if (nodoAttuale.collegamento(i).tipoLink.compareTo(nodoAttuale.
+                    collegamento(i).vicino(j).tipoLink) == 0) {
+                  tipoLink = nodoAttuale.collegamento(i).tipoLink;
+                }
+                else {
+                  tipoLink = nodoAttuale.collegamento(i).tipoLink +
+                      nodoAttuale.collegamento(i).vicino(j).tipoLink;
+                }
+                link.setAttribute("type", tipoLink);
+                long distance;
+
+                if (tipoLink.compareTo("Fas") == 0) {
+                  distance = 100;
+                }
+                else if (tipoLink.compareTo("Eth") == 0) {
+                  distance = 100;
+                }
+                else if (tipoLink.compareTo("EthFas") == 0) {
+                  distance = 100;
+                }
+                else if (tipoLink.compareTo("FasEth") == 0) {
+                  distance = 100;
+                }
+                else if (tipoLink.compareTo("Tok") == 0) {
+                  distance = 100;
+                }
+                else if (tipoLink.compareTo("BRI") == 0) {
+                  distance = 100000;
+                }
+                else if (tipoLink.compareTo("Dia") == 0) {
+                  distance = 100000;
+                }
+                else if (tipoLink.compareTo("Tun") == 0) {
+                  distance = 1000000;
+                }
+                else {
+                  distance = 10000;
+                }
+
+                    /* //condizione temporanea utile per la particolare topologia di Banca Carige
+                     if (nodoAttuale.collegamento(i).indirizzo().indexOf("1.1.1")!=-1 ) {
+                   distance=100000;
+                                  }
+                 */
+
+                if (nodoAttuale.identificativo.indexOf("Network") != -1 ||
+                    nodoAttuale.collegamento(i).vicino(j).identificativo.
+                    indexOf("Network") != -1) {
+                  distance /= 2;
+                }
+                link.setAttribute("distance", "" + distance);
+
+                //String bandwidth=nodoAttuale.collegamento(i).bandwidth;
+                //long BW = (new Long(bandwidth)).longValue();
+                //Double distance = new Double(10000/BW);
+                //link.setAttribute("distance", distance.toString());
+                links.appendChild(link);
+              }
+            } //end for (int j=0; j<nodoAttuale.collegamento(i).vicini.size(); j++)
+          } //end(nodoAttuale.collegamento(i).shutdown==null)
+        } //end (int i=0; i<nodoAttuale.collegamenti.size(); i++)
+        nodes.appendChild(node);
+      }
+      for (int indice = 0; indice < numeroPseudoNodi; indice++) {
+        nodo nodoAttuale = (nodo) pseudoNodi.get(indice);
+        if (nodoAttuale.collegamento(0).vicini.size() > 2) {
+          Element node = topologiaXML.createElement("node");
+          node.setAttribute("name", nodoAttuale.nome);
+          node.setAttribute("id", nodoAttuale.identificativo);
+          node.setAttribute("riferimento", nodoAttuale.riferimento);
+          nodes.appendChild(node);
+        }
+      }
+      TransformerFactory fabbricaTransformer = TransformerFactory.newInstance();
+      Transformer transformer = fabbricaTransformer.newTransformer();
+      DOMSource source = new DOMSource(topologiaXML);
+      StreamResult result = new StreamResult(new FileWriter(nomeFile));
+      transformer.transform(source, result);
+    }
+    catch (ParserConfigurationException err) {}
+    catch (TransformerConfigurationException err) {}
+    catch (TransformerException err) {}
+    catch (IOException err) {}
+
+    StringBuffer testo = new StringBuffer();
+    try {
+      BufferedReader testo_file = new BufferedReader(new FileReader(nomeFile));
+      boolean uscita = false;
+      while (!uscita) {
+        String riga = testo_file.readLine();
+        if (riga == null) {
+          uscita = true;
+        }
+        else {
+          testo.append(riga + "\n");
+        }
+      }
+      testo_file.close();
+    }
+    catch (IOException e) {
+      messaggi.append("\n" +
+                      "Classe apriSepara, Metodo apriSepara: Errore di IO");
+    }
+    String DTD =
+        "\n<!DOCTYPE Topology [" +
+        "\n<!ELEMENT Topology (Nodes, Links)>" +
+        "\n<!ELEMENT Nodes (node*)>" +
+        "\n<!ELEMENT Links (link*)>" +
+        "\n<!ELEMENT node EMPTY>" +
+        "\n<!ATTLIST node id ID #REQUIRED>" +
+        "\n<!ATTLIST node name CDATA #REQUIRED>" +
+        "\n<!ELEMENT link EMPTY>" +
+        "\n<!ATTLIST link source IDREF #REQUIRED>" +
+        "\n<!ATTLIST link target IDREF #REQUIRED>" +
+        "\n<!ATTLIST link distance CDATA #REQUIRED>" +
+        "\n<!ATTLIST link type CDATA #REQUIRED>" +
+        "\n]>";
+    int posizioneDTD = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>".length();
+    String TopologiaXML_DTD = testo.insert(posizioneDTD, DTD).toString();
+    try {
+      BufferedWriter scriviFileXML_DTD = new BufferedWriter(new FileWriter(
+          nomeFile));
+      scriviFileXML_DTD.write(TopologiaXML_DTD);
+      scriviFileXML_DTD.close();
+    }
+    catch (IOException err) {}
+  }
+
+  public void scriviFileGDL(String nomeFile) {
+    try {
+      BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile));
+      uscita.write("graph: {");
+
+      uscita.newLine();
+      uscita.write("  layoutalgorithm: forcedir");
+      uscita.newLine();
+      uscita.write("  scaling        : maxspect");
+      uscita.newLine();
+      uscita.write("  arrowmode      : free");
+      uscita.newLine();
+      uscita.write("  node.shape     : circle");
+      uscita.newLine();
+      uscita.write("  node.width     : 30");
+      uscita.newLine();
+      uscita.write("  // Parameters for force-directed placement");
+      uscita.newLine();
+      uscita.write("  attraction     : 80    // Attractive force");
+      uscita.newLine();
+      uscita.write("  repulsion      : 800    // Repulsive force");
+      uscita.newLine();
+      uscita.write("  gravity        :  10.0  // Gravitational force (float)");
+      uscita.newLine();
+      uscita.write("  randomrounds   :  0    // Rounds with random impulse");
+      uscita.newLine();
+      uscita.write("  randomimpulse  :  0    // Force of the random impulse");
+      uscita.newLine();
+      uscita.write("  fdmax          : 50    // Number of iterations");
+      uscita.newLine();
+      uscita.write("  tempmax        : 254   // Maximal Temperature");
+      uscita.newLine();
+      uscita.write("  tempmin        :  0    // Minimal Temperature");
+      uscita.newLine();
+      uscita.write("  temptreshold   :  3    // > 0");
+      uscita.newLine();
+      uscita.write("  tempscheme     :  3    // 1 - 8");
+      uscita.newLine();
+      uscita.write("  tempfactor     :  1.08 // > 1 (float)");
+      uscita.newLine();
+      uscita.write("  randomfactor   :100    // 100 means: determ. schedule");
+      uscita.newLine();
+      uscita.write("  magnetic_field1: top_to_bottom");
+      uscita.newLine();
+      uscita.write("  magnetic_field2: no");
+      uscita.newLine();
+      uscita.write("  magnetic_force1: 20");
+      uscita.newLine();
+      uscita.write("  magnetic_force2:  0");
+      uscita.newLine();
+      uscita.write("  // And the border coordinates");
+      uscita.newLine();
+      uscita.write("  border x : 5000");
+      uscita.newLine();
+      uscita.write("  border y : 5000");
+
+      for (int i = 0; i < numeroNodi; i++) {
+        uscita.newLine();
+        uscita.write("node: {title:\"" + nodo(i).identificativo + "\" "
+                     + "label:\"" + nodo(i).nome + "\"}");
+      }
+      for (int i = 0; i < numeroPseudoNodi; i++) {
+        if (pseudoNodo(i).collegamento(0).numeroVicini == 2) {
+          uscita.newLine();
+          uscita.write("edge: "
+                       + "{source:\"" +
+                       pseudoNodo(i).collegamento(0).vicino(0).identificativo +
+                       "\""
+                       + "target:\"" +
+                       pseudoNodo(i).collegamento(0).vicino(1).identificativo +
+                       "\"}");
+        }
+        else if (pseudoNodo(i).collegamento(0).numeroVicini > 2) {
+          uscita.newLine();
+          uscita.write("node: {title:\"" + pseudoNodo(i).identificativo + "\" "
+                       + "label:\"" + pseudoNodo(i).nome + "\"}");
+          for (int j = 0; j < pseudoNodo(i).collegamento(0).numeroVicini; j++) {
+            uscita.newLine();
+            uscita.write("edge: "
+                         + "{source:\"" + pseudoNodo(i).identificativo + "\""
+                         + "target:\"" +
+                         pseudoNodo(i).collegamento(0).vicino(j).identificativo +
+                         "\"}");
+          }
+        }
+      }
+      uscita.newLine();
+      uscita.write("}");
+      uscita.close();
+    }
+    catch (IOException e) {
+      messaggi.append("\n" + "errore in scriviFileGDL");
+    }
+  }
+
+  public void scriviLinksHTML(String nomeFile) {
+    try {
+      BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile));
+      uscita.write("<html>");
+      uscita.newLine();
+      uscita.write(
+          "<head><TITLE>Network Analysis (by Faustino Palma CCIE#8959)</TITLE></head>");
+      uscita.newLine();
+      uscita.write("<body>");
+      uscita.newLine();
+      uscita.write("<table border=\"0\">");
+      uscita.newLine();
+      uscita.write(
+          "<tr><td>??????????</td><td>??????????</td><td>??????????</td></tr>");
+      uscita.newLine();
+      for (int indice = 0; indice < orderedLinks.size(); indice++) {
+        uscita.write("<tr>"
+                     + "<td><a href=\"" +
+                     orderedLink(indice).source.riferimento + "\">"
+                     + orderedLink(indice).source.nome + "</a></td><td>"
+                     + orderedLink(indice).source.centrality + "</td>"
+                     + "<td>"
+                     + orderedLink(indice).link_source.interfaccia + "</td><td>"
+                     + orderedLink(indice).link_source.indirizzo() + "</td>"
+                     + "<td><a href=\"" +
+                     orderedLink(indice).target.riferimento + "\">"
+                     + orderedLink(indice).target.nome + "</a></td><td>"
+                     + orderedLink(indice).target.centrality + "</td>"
+                     + "<td>"
+                     + orderedLink(indice).link_target.interfaccia + "</td><td>"
+                     + orderedLink(indice).link_target.indirizzo() + "</td>"
+                     + "</tr>");
+        uscita.newLine();
+      }
+      uscita.write("</table>");
+      uscita.newLine();
+      uscita.write("</body>");
+      uscita.newLine();
+      uscita.write("</html>");
+      uscita.close();
+    }
+    catch (IOException e) {
+      Frame1.messaggi.append("\n" + "errore in scriviElencoHTML");
+    }
+  }
+
+  public void compilaStampaGrappaNuova(String nomefile) {
+    ArrayList intestazione = new ArrayList();
+    intestazione.add("ID CLIENTE-SEDE A");
+    intestazione.add("TIPOLOGIA SEDE A");
+    intestazione.add("CODICE SEDE A");
+    intestazione.add("REGIONE A");
+    intestazione.add("CITTA' A");
+    intestazione.add("PROVINCIA A");
+    intestazione.add("CAP A");
+    intestazione.add("NAZIONE A");
+    intestazione.add("VIA A");
+    intestazione.add("NOTE SEDE A");
+    intestazione.add("REFERENTE A");
+    intestazione.add("TELEFONO REFERENTE A");
+    intestazione.add("NOME APPARATO A");
+    intestazione.add("TIPO APPARATO A");
+    intestazione.add("HOST NAME A");
+    intestazione.add("STATO A");
+    intestazione.add("DATA ATTIVAZIONE A");
+    intestazione.add("DATA CESSAZIONE A");
+    intestazione.add("COSTRUTTORE A");
+    intestazione.add("SERIAL NUMBER A");
+    intestazione.add("MODELLO A");
+    intestazione.add("IOS A");
+    intestazione.add("RAM A");
+    intestazione.add("TECNOLOGIA A");
+    intestazione.add("FLAG GESTIONE A");
+    intestazione.add("DRAM A");
+    intestazione.add("FLAG BACKUP A");
+    intestazione.add("FLAG SHARED A");
+    intestazione.add("FLASH A");
+    intestazione.add("LOOPBACK/IP DI GESTIONE A");
+    intestazione.add("LIVELLO A");
+    intestazione.add("APPARATO CONCENTRATORE A");
+    intestazione.add("COMMUNITY SNMP A");
+    //--------------------------------------------------------------------------
+    intestazione.add("SERIALE A");
+    intestazione.add("TIPO A");
+    intestazione.add("STATO A");
+    intestazione.add("NOME PORTA LOGICA A");
+    intestazione.add("BANDA PORTA LOGICA A");
+    intestazione.add("STATO PORTA LOGICA A");
+    intestazione.add("IP A");
+    //SEDE Z--------------------------------------------------------------------
+    intestazione.add("ID CLIENTE-SEDE Z");
+    intestazione.add("TIPOLOGIA SEDE Z");
+    intestazione.add("CODICE SEDE Z");
+    intestazione.add("REGIONE Z");
+    intestazione.add("CITTA' Z");
+    intestazione.add("PROVINCIA Z");
+    intestazione.add("CAP Z");
+    intestazione.add("NAZIONE Z");
+    intestazione.add("VIA Z");
+    intestazione.add("NOTE SEDE Z");
+    intestazione.add("REFERENTE Z");
+    intestazione.add("TELEFONO REFERENTE Z");
+    intestazione.add("NOME APPARATO Z");
+    intestazione.add("TIPO APPARATO Z");
+    intestazione.add("HOST NAME Z");
+    intestazione.add("STATO Z");
+    intestazione.add("DATA ATTIVAZIONE Z");
+    intestazione.add("DATA CESSAZIONE Z");
+    intestazione.add("COSTRUTTORE Z");
+    intestazione.add("SERIAL NUMBER Z");
+    intestazione.add("MODELLO Z");
+    intestazione.add("IOS Z");
+    intestazione.add("RAM Z");
+    intestazione.add("TECNOLOGIA Z");
+    intestazione.add("FLAG GESTIONE Z");
+    intestazione.add("DRAM Z");
+    intestazione.add("FLAG BACKUP Z");
+    intestazione.add("FLAG SHARED Z");
+    intestazione.add("FLASH Z");
+    intestazione.add("LOOPBACK/IP DI GESTIONE Z");
+    intestazione.add("LIVELLO Z");
+    intestazione.add("APPARATO CONCENTRATORE Z");
+    intestazione.add("COMMUNITY SNMP Z");
+    intestazione.add("CODICE SLA");
+    //--------------------------------------------------------------------------
+    intestazione.add("SERIALE Z");
+    intestazione.add("TIPO Z");
+    intestazione.add("STATO Z");
+    intestazione.add("NOME PORTA LOGICA Z");
+    intestazione.add("BANDA PORTA LOGICA Z");
+    intestazione.add("STATO PORTA LOGICA Z");
+    intestazione.add("IP Z");
+    //COLLEGAMENTO--------------------------------------------------------------
+    intestazione.add("NOME COL LEGAMENTO");
+    intestazione.add("BANDA");
+    intestazione.add("TIPO COLLEGAMENTO");
+    intestazione.add("STATO");
+    intestazione.add("DATA ATTIVAZIONE");
+    intestazione.add("VRF");
+    intestazione.add("PESO");
+    intestazione.add("DESCRIZIONE");
+    intestazione.add("AUTONOMOUS SYSTEM");
+    intestazione.add("NUMERO AUTONOMOUS SYSTEM");
+    //--------------------------------------------------------------------------
+    intestazione.add("TD/A");
+    intestazione.add("TGU/A");
+    intestazione.add("NUA/A");
+    intestazione.add("CIR/A");
+    intestazione.add("CIR RQ/A");
+    intestazione.add("VPI/A");
+    intestazione.add("VCI/A");
+    intestazione.add("DLCI/A");
+    intestazione.add("IP ISDN/A");
+    intestazione.add("N. ISDN/A");
+    //--------------------------------------------------------------------------
+    intestazione.add("TD/Z");
+    intestazione.add("TGU/Z");
+    intestazione.add("NUA/Z");
+    intestazione.add("CIR/Z");
+    intestazione.add("CIR RQ/Z");
+    intestazione.add("VPI/Z");
+    intestazione.add("VCI/Z");
+    intestazione.add("DLCI/Z");
+    intestazione.add("IP ISDN/Z");
+    intestazione.add("N. ISDN/Z");
+    tabella tabellaLink = new tabella(intestazione, messaggi);
+    String vuota = "";
+    for (int indice = 0; indice < orderedLinks.size(); indice++) {
+      tabellaLink.addRuotatore();
+      tabellaLink.inserire("ID CLIENTE-SEDE A", vuota);
+      tabellaLink.inserire("TIPOLOGIA SEDE A", vuota);
+      tabellaLink.inserire("CODICE SEDE A", vuota);
+      tabellaLink.inserire("REGIONE A", vuota);
+      tabellaLink.inserire("CITTA' A", vuota);
+      tabellaLink.inserire("PROVINCIA A", vuota);
+      tabellaLink.inserire("CAP A", vuota);
+      tabellaLink.inserire("NAZIONE A", vuota);
+      tabellaLink.inserire("VIA A", vuota);
+      tabellaLink.inserire("NOTE SEDE A", vuota);
+      tabellaLink.inserire("REFERENTE A", vuota);
+      tabellaLink.inserire("TELEFONO REFERENTE A", vuota);
+      tabellaLink.inserire("NOME APPARATO A", vuota);
+      tabellaLink.inserire("TIPO APPARATO A", vuota);
+      tabellaLink.inserire("HOST NAME A", orderedLink(indice).source.nome);
+      tabellaLink.inserire("STATO A", vuota);
+      tabellaLink.inserire("DATA ATTIVAZIONE A", vuota);
+      tabellaLink.inserire("DATA CESSAZIONE A", vuota);
+      tabellaLink.inserire("COSTRUTTORE A", vuota);
+      tabellaLink.inserire("SERIAL NUMBER A",
+                           orderedLink(indice).source.grappa.SerialNumber);
+      tabellaLink.inserire("MODELLO A",
+                           orderedLink(indice).source.grappa.Modello);
+      tabellaLink.inserire("IOS A", orderedLink(indice).source.grappa.IOS);
+      tabellaLink.inserire("RAM A", orderedLink(indice).source.grappa.RAM);
+      tabellaLink.inserire("TECNOLOGIA A", vuota);
+      tabellaLink.inserire("FLAG GESTIONE A", vuota);
+      tabellaLink.inserire("DRAM A", vuota);
+      tabellaLink.inserire("FLAG BACKUP A",
+                           orderedLink(indice).source.grappa.flagBackUp);
+      tabellaLink.inserire("FLAG SHARED A", vuota);
+      tabellaLink.inserire("FLASH A", orderedLink(indice).source.grappa.Flash);
+      tabellaLink.inserire("LOOPBACK/IP DI GESTIONE A",
+                           orderedLink(indice).source.grappa.LoopBackGestione);
+      tabellaLink.inserire("LIVELLO A",
+                           "" + orderedLink(indice).source.centrality);
+      tabellaLink.inserire("APPARATO CONCENTRATORE A", vuota);
+      tabellaLink.inserire("COMMUNITY SNMP A",
+                           orderedLink(indice).source.grappa.CommunitySNMP);
+      //------------------------------------------------------------------------
+      tabellaLink.inserire("SERIALE A", vuota);
+      tabellaLink.inserire("TIPO A",
+                           orderedLink(indice).link_source.encapsulation);
+      tabellaLink.inserire("STATO A", vuota);
+      tabellaLink.inserire("NOME PORTA LOGICA A",
+                           orderedLink(indice).link_source.interfaccia);
+      tabellaLink.inserire("BANDA PORTA LOGICA A", vuota);
+      tabellaLink.inserire("STATO PORTA LOGICA A", vuota);
+      tabellaLink.inserire("IP A", orderedLink(indice).link_source.indirizzo());
+      //SEDE Z------------------------------------------------------------------
+      tabellaLink.inserire("ID CLIENTE-SEDE Z", vuota);
+      tabellaLink.inserire("TIPOLOGIA SEDE Z", vuota);
+      tabellaLink.inserire("CODICE SEDE Z", vuota);
+      tabellaLink.inserire("REGIONE Z", vuota);
+      tabellaLink.inserire("CITTA' Z", vuota);
+      tabellaLink.inserire("PROVINCIA Z", vuota);
+      tabellaLink.inserire("CAP Z", vuota);
+      tabellaLink.inserire("NAZIONE Z", vuota);
+      tabellaLink.inserire("VIA Z", vuota);
+      tabellaLink.inserire("NOTE SEDE Z", vuota);
+      tabellaLink.inserire("REFERENTE Z", vuota);
+      tabellaLink.inserire("TELEFONO REFERENTE Z", vuota);
+      tabellaLink.inserire("NOME APPARATO Z", vuota);
+      tabellaLink.inserire("TIPO APPARATO Z", vuota);
+      tabellaLink.inserire("HOST NAME Z", orderedLink(indice).target.nome);
+      tabellaLink.inserire("STATO Z", vuota);
+      tabellaLink.inserire("DATA ATTIVAZIONE Z", vuota);
+      tabellaLink.inserire("DATA CESSAZIONE Z", vuota);
+      tabellaLink.inserire("COSTRUTTORE Z", vuota);
+      tabellaLink.inserire("SERIAL NUMBER Z",
+                           orderedLink(indice).target.grappa.SerialNumber);
+      tabellaLink.inserire("MODELLO Z",
+                           orderedLink(indice).target.grappa.Modello);
+      tabellaLink.inserire("IOS Z", orderedLink(indice).target.grappa.Flash);
+      tabellaLink.inserire("RAM Z", orderedLink(indice).target.grappa.RAM);
+      tabellaLink.inserire("TECNOLOGIA Z", vuota);
+      tabellaLink.inserire("FLAG GESTIONE Z", vuota);
+      tabellaLink.inserire("DRAM Z", vuota);
+      tabellaLink.inserire("FLAG BACKUP Z",
+                           orderedLink(indice).target.grappa.flagBackUp);
+      tabellaLink.inserire("FLAG SHARED Z", vuota);
+      tabellaLink.inserire("FLASH Z", orderedLink(indice).target.grappa.Flash);
+      tabellaLink.inserire("LOOPBACK/IP DI GESTIONE Z",
+                           orderedLink(indice).target.grappa.LoopBackGestione);
+      tabellaLink.inserire("LIVELLO Z",
+                           "" + orderedLink(indice).target.centrality);
+      tabellaLink.inserire("APPARATO CONCENTRATORE Z", vuota);
+      tabellaLink.inserire("COMMUNITY SNMP Z",
+                           orderedLink(indice).target.grappa.LoopBackGestione);
+      //------------------------------------------------------------------------
+      tabellaLink.inserire("SERIALE Z", vuota);
+      tabellaLink.inserire("TIPO Z",
+                           orderedLink(indice).link_target.encapsulation);
+      tabellaLink.inserire("STATO Z", vuota);
+      tabellaLink.inserire("NOME PORTA LOGICA Z",
+                           orderedLink(indice).link_target.interfaccia);
+      tabellaLink.inserire("BANDA PORTA LOGICA Z", vuota);
+      tabellaLink.inserire("STATO PORTA LOGICA Z", vuota);
+      tabellaLink.inserire("IP Z", orderedLink(indice).link_target.indirizzo());
+      //COLLEGAMENTO------------------------------------------------------------
+      tabellaLink.inserire("NOME COL LEGAMENTO", vuota);
+      tabellaLink.inserire("BANDA", vuota);
+      tabellaLink.inserire("TIPO COLLEGAMENTO", vuota);
+      tabellaLink.inserire("STATO", vuota);
+      tabellaLink.inserire("DATA ATTIVAZIONE", vuota);
+      tabellaLink.inserire("VRF", vuota);
+      tabellaLink.inserire("PESO", vuota);
+      tabellaLink.inserire("DESCRIZIONE", vuota);
+      //------------------------------------------------------------------------
+      tabellaLink.inserire("TD/A", vuota);
+      tabellaLink.inserire("TGU/A", vuota);
+      tabellaLink.inserire("NUA/A", vuota);
+      tabellaLink.inserire("CIR/A", vuota);
+      tabellaLink.inserire("CIR RQ/A", vuota);
+      tabellaLink.inserire("VPI/A", orderedLink(indice).link_source.grappa.VPI);
+      tabellaLink.inserire("VCI/A", orderedLink(indice).link_source.grappa.VCI);
+      tabellaLink.inserire("DLCI/A",
+                           orderedLink(indice).link_source.grappa.DLCI);
+      tabellaLink.inserire("IP ISDN/A", vuota);
+      tabellaLink.inserire("N. ISDN/A", vuota);
+      //------------------------------------------------------------------------
+      tabellaLink.inserire("TD/Z", vuota);
+      tabellaLink.inserire("TGU/Z", vuota);
+      tabellaLink.inserire("NUA/Z", vuota);
+      tabellaLink.inserire("CIR/Z", vuota);
+      tabellaLink.inserire("CIR RQ/Z", vuota);
+      tabellaLink.inserire("VPI/Z", orderedLink(indice).link_target.grappa.VPI);
+      tabellaLink.inserire("VCI/Z", orderedLink(indice).link_target.grappa.VCI);
+      tabellaLink.inserire("DLCI/Z",
+                           orderedLink(indice).link_target.grappa.DLCI);
+      tabellaLink.inserire("IP ISDN/Z", vuota);
+      tabellaLink.inserire("N. ISDN/Z", vuota);
+      tabellaLink.scriviFileHTML(nomefile);
+    } //end for (int indice=0; indice<orderedLinks.size(); indice++)
+  }
+}

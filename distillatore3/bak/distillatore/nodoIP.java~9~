@@ -1,0 +1,74 @@
+package distillatore;
+import java.util.*;
+import java.awt.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class nodoIP {
+  TextArea messaggi = new TextArea();
+  private class variabile {
+    public String nome = null;
+    public String valore = null;
+    public variabile(String nome, String valore) {
+      this.nome = nome;
+      this.valore = valore;
+    }
+  }
+
+  public String nome = null;
+  public ArrayList contenuto = new ArrayList();
+  public ArrayList rami = new ArrayList();
+  public int quantità = 0;
+
+  public nodoIP(String nome, TextArea messaggi) {
+    this.nome = nome;
+  }
+
+  public void aggiungiVariabile(String nome, String valore) {
+    contenuto.add(new variabile(nome, valore) );
+  }
+
+  public String nomeVariabile(int indice) {
+    return ((variabile) contenuto.get(indice) ).nome;
+  }
+
+  public String valoreVariabile(int indice) {
+    return ((variabile) contenuto.get(indice) ).valore;
+  }
+
+  public void aggiungiRamo(String nome) {
+    rami.add(new nodoIP(nome, messaggi) );
+  }
+
+  public bidimensionale inTabella() {
+    bidimensionale tabella = new bidimensionale(messaggi);
+    int posizioneX = 0;
+    int posizioneY = 0;
+    tabella.aggiungiElemento(0, 0, nome);
+    for (int i = 0; i < contenuto.size(); i++) {
+      variabile elemento = (variabile) contenuto.get(i);
+      tabella.aggiungiElemento(i, 1, elemento.nome);
+      tabella.aggiungiElemento(i, 2, elemento.valore);
+    }
+    posizioneX += contenuto.size();
+    posizioneY += 1;
+    for (int i = 0; i < rami.size(); i++) {
+      nodoIP ramo = (nodoIP) rami.get(i);
+      bidimensionale tabellaRamo = ramo.inTabella();
+      tabella.aggiungiTabella(posizioneX, posizioneY, tabellaRamo);
+      posizioneX += tabellaRamo.dimensioneX + 1;
+    }
+    return tabella;
+  }
+
+  public nodoIP ramo(int indice) {
+    return (nodoIP) rami.get(indice);
+  }
+}

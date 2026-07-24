@@ -1,0 +1,38 @@
+[PropertyInfo]
+avviaVendemmiatore,Button,false,false, , ,false,<default>
+button_comandi,Button,false,false, , ,false,<default>
+button_discovery,Button,false,false, , ,false,<default>
+button_print_discovery,Button,false,false, , ,false,<default>
+cartellaOutput,TextField,false,false, , ,false,<default>
+cartellaOutput_label,Label,false,false, , ,false,<default>
+conf,configurazione,false,false, , ,false,<default>
+configura,Button,false,false, , ,false,<default>
+contaVendemmiatori,int,false,false, , ,false,<default>
+dispencer,tokenDispencer,false,false, , ,false,<default>
+fileIndirizzi,TextField,false,false, , ,false,<default>
+fileIndirizzi_label,Label,false,false, , ,false,<default>
+indirizzoWS,TextField,false,false, , ,false,<default>
+indirizzoWS_label,Label,false,false, , ,false,<default>
+jButton_add_WS,JButton,false,false, , ,false,<default>
+lotteria_mia,lotteria,false,false, , ,false,<default>
+network,network,false,false, , ,false,<default>
+onlyPassLogin,TextArea,false,false, , ,false,<default>
+passEna_label,Label,false,false, , ,false,<default>
+passEnable,TextArea,false,false, , ,false,<default>
+passLogin,TextArea,false,false, , ,false,<default>
+passwLogin_label,Label,false,false, , ,false,<default>
+passWS_label,Label,false,false, , ,false,<default>
+passwWS,TextField,false,false, , ,false,<default>
+textArea_userName_enable,TextArea,false,false, , ,false,<default>
+textArea_userPasswd_enable,TextArea,false,false, , ,false,<default>
+textField_Start_Address,TextField,false,false, , ,false,<default>
+userLogin,TextArea,false,false, , ,false,<default>
+userLogin_label,Label,false,false, , ,false,<default>
+userWS,TextField,false,false, , ,false,<default>
+userWS_label,Label,false,false, , ,false,<default>
+xYLayout1,XYLayout,false,false, , ,false,<default>
+[IconNames]
+
+
+
+

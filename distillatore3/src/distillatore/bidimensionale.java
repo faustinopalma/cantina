@@ -1,0 +1,70 @@
+package distillatore;
+import java.util.*;
+import java.awt.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class bidimensionale {
+  TextArea messaggi = new TextArea();
+  private HashMap tavola = new HashMap();
+  int dimensioneX = 0;
+  int dimensioneY = 0;
+
+  public bidimensionale(TextArea messaggi) {
+  }
+
+  public void aggiungiElemento (int X, int Y, String elemento) {
+    String posizione = String.valueOf(X) + "_" + String.valueOf(Y);
+    tavola.put(posizione, elemento);
+    if (X > dimensioneX) dimensioneX = X;
+    if (Y > dimensioneY) dimensioneY = Y;
+  }
+
+  public void aggiungiTabella(int X, int Y, bidimensionale tabella) {
+    for (int y = 0; y <= tabella.dimensioneY; y++) {
+      for (int x = 0; x <= tabella.dimensioneX; x++) {
+        aggiungiElemento(x + X, y + Y, tabella.prendiElemento(x, y) );
+      }
+    }
+  }
+
+  public String prendiElemento (int X, int Y) {
+    String posizione = String.valueOf(X) + "_" + String.valueOf(Y);
+    if (tavola.containsKey(posizione) ) {
+      return (String) tavola.get(posizione);
+    } else {
+      return "";
+    }
+  }
+
+  public String distendiOrizzontale() {
+    String disteso = "";
+    for (int y = 0; y <= dimensioneY; y++) {
+      for (int x = 0; x <= dimensioneX; x++) {
+        disteso += prendiElemento(x, y) + "\t";
+      }
+      disteso += "\n";
+    }
+    return disteso;
+  }
+
+
+  public String distendiVerticale() {
+    String disteso = "";
+    for (int x = 0; x <= dimensioneX; x++) {
+      for (int y = 0; y <= dimensioneY; y++) {
+        disteso += prendiElemento(x, y) + "\t";
+      }
+      disteso += "\n";
+    }
+    return disteso;
+  }
+
+}

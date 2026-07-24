@@ -1,0 +1,32 @@
+
+The Linux JDK ports prior to 1.1.3 all suffered from a bug that causes
+the getLocalAddress() method of java.net.Socket and java.net.DatagramSocket
+to return an InetAddress instance with an IP addresses with a reversed
+byte order.  This causes the NetComponents(TM) FTP classes to fail.
+The bug is actually in Sun's code, which fails to make a byte-ordering
+conversion in one place, causing problems on little-endian architectures.
+At least one Linux 1.1.5 port has fixed this problem in the native code.
+
+But if the port you are using has not fixed this problem, to use
+NetComponents(TM) on x86 Linux, you must substitute your JDK's 
+java.net.PlainSocketImpl and java.net.PlainDatagramSocketImpl .class
+files with the ones in the linux/ subdirectory accompanying this
+distribution.  The substitute class files provide a temporary workaround 
+for the Linux JDK bug.
+
+You MUST install the substitute classes to be sure NetComponents(TM) will
+function properly under the Blackdown Linux JDK 1.1.3.  If you are using
+Solaris x86, FreeBSD, or any other x86 Unix with a JDK based off of the
+Sun JDK sources, you may suffer from the same bug, and might be able to
+use our Linux fix.
+
+NOTE TO USERS OF VERSIONS PRIOR TO 1.2.3
+
+We previously provided a workaround using modified InetAddress and
+InetAddressImpl classes.  This workaround would make the FTP classes
+work, but could break other programs.  If you have the old fix installed,
+you should remove it and restore the original InetAddress and
+InetAddressImpl classes.  We have traced the bug to the native method
+socketGetOption in PlainSocketImpl and have provided an all Java fix
+until the Linux JDK's fix the problem in native code.  We apologize for
+not getting to the root of the problem sooner.

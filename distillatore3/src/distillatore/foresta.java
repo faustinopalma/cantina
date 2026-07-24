@@ -1,0 +1,185 @@
+package distillatore;
+import java.util.*;
+import java.io.*;
+import java.awt.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class foresta {
+  TextArea messaggi = new TextArea();
+  public ArrayList piante = new ArrayList();
+  public int numeroPiante = 0;
+  public ArrayList specie = new ArrayList();
+  public int numeroSpecie = 0;
+  private ArrayList liste = new ArrayList();
+  lista lista(int indice) {return (lista) liste.get(indice);}
+  int listeSize() {return liste.size();}
+
+  public foresta() {
+  }
+
+  public int aggiungiPianta(nodo pianta) {
+    return aggiungiPianta(pianta, "id_collegamento?", "hostName?");
+  }
+
+  public int aggiungiPianta(nodo pianta, String id_collegamento, String hostName) {
+    if(pianta!=null) {
+      int specieIndividuo;
+      piante.add(pianta);
+      numeroPiante = piante.size();
+      boolean classificato = false;
+      int indice = 0;
+      while (!classificato && indice<numeroSpecie) {
+        classificato = confrontaSpecie(pianta, (nodo) specie.get(indice));
+        indice++;
+      }
+      if (classificato) {
+        specieIndividuo = indice;
+        nodo questaSpecie = ((nodo) specie.get(indice-1));
+        questaSpecie.quantità++;
+        questaSpecie.identificativo = "Riferimento:" + String.valueOf(specieIndividuo);
+        questaSpecie.nome = "Riferimento:" + String.valueOf(specieIndividuo) +
+                            " Quantità:" + String.valueOf(questaSpecie.quantità);
+        lista(specieIndividuo-1).addRuotatore();
+        lista(specieIndividuo-1).inserire("Riferimento", "<a href=\""+"..\\..\\Topologia\\"+id_collegamento+".html"+"\">"+hostName+"</a>");
+      } else {
+        specieIndividuo = indice + 1;
+        pianta.quantità=1;
+        pianta.identificativo = "Riferimento:" + String.valueOf(specieIndividuo);
+        pianta.nome = "Riferimento:" + String.valueOf(specieIndividuo) +
+                      " Quantità:" + String.valueOf(pianta.quantità);
+        specie.add(pianta);
+        numeroSpecie = specie.size();
+        liste.add(new lista(messaggi));
+        lista(specieIndividuo-1).addRuotatore();
+        lista(specieIndividuo-1).inserire("Riferimento", "<a href=\""+"..\\..\\Topologia\\"+id_collegamento+".html"+"\">"+hostName+"</a>");
+      }
+      return specieIndividuo;
+    } else return 0;
+  }
+
+  public boolean confrontaSpecie(nodo pianta1, nodo pianta2) {
+    int numeroFoglie1 = pianta1.contenuto.size();
+    int numeroFoglie2 = pianta2.contenuto.size();
+    int numeroRami1 = pianta1.rami.size();
+    int numeroRami2 = pianta2.rami.size();
+    boolean risultato;
+    boolean paragonabili = ( (numeroFoglie1==numeroFoglie2)&&(numeroRami1==numeroRami2) );
+    if (paragonabili) {
+      //blocco che analizza l'uguaglianza dell'insieme delle variabili..........
+      ArrayList contatoreFoglie2 = new ArrayList(numeroFoglie2);
+      for (int i = 0; i<numeroFoglie2; i++) {
+        contatoreFoglie2.add(new Integer(i));
+      }
+      boolean diversi = false;
+      int indice1 = 0;
+      while ( !diversi && indice1<numeroFoglie1 ) {
+        if (pianta1.variabileDaConfrontare(indice1) ) {
+          boolean ugualeTrovato = false;
+          int indice2 = 0;
+          while ( !ugualeTrovato && indice2<contatoreFoglie2.size() ) {
+            int indice2vero = ((Integer) contatoreFoglie2.get(indice2) ).intValue();
+            ugualeTrovato =
+                pianta1.nomeVariabile(indice1).compareToIgnoreCase(pianta2.nomeVariabile(indice2vero))==0 &&
+                pianta1.valoreVariabile(indice1).compareToIgnoreCase(pianta2.valoreVariabile(indice2vero))==0;
+            if (ugualeTrovato) {contatoreFoglie2.remove(indice2);}
+            indice2++;
+          }
+          if (!ugualeTrovato) diversi = true;
+          indice1++;
+        } else
+          {indice1++;}
+      }
+      //fine del blocco che analizza l'uguaglianza dell'insieme delle variabili.
+      if (!diversi) {
+        //blocco che analizza l'uguaglianza dell'insieme dei rami...............
+
+        ArrayList contatoreRami2 = new ArrayList(numeroRami2);
+        for (int i = 0; i<numeroRami2; i++) {
+          contatoreRami2.add(new Integer(i));
+        }
+        boolean ramiDiversi = false;
+        int indiceRami1 = 0;
+        while ( !ramiDiversi && indiceRami1<numeroRami1 ) {
+          boolean ugualeTrovato = false;
+          int indiceRami2 = 0;
+          while ( !ugualeTrovato && indiceRami2<contatoreRami2.size() ) {
+            int indiceRami2vero = ((Integer) contatoreRami2.get(indiceRami2) ).intValue();
+            ugualeTrovato = confrontaSpecie(pianta1.ramo(indiceRami1), pianta2.ramo(indiceRami2vero) );
+            if (ugualeTrovato) contatoreRami2.remove(indiceRami2);
+            indiceRami2++;
+          }
+          if (!ugualeTrovato) ramiDiversi = true;
+          indiceRami1++;
+        }
+        //fine del blocco che analizza l'uguaglianza dell'insieme dei rami......
+        risultato = !ramiDiversi;
+      } else {risultato = false; }
+    } else {risultato = false; }
+    return risultato;
+  }//fine del metodo confrontaSpecie
+
+  public nodo restituisciPianta(int indice) {
+    return (nodo) piante.get(indice);
+  }
+
+  public nodo restituisciSpecie(int indice) {
+    return (nodo) specie.get(indice);
+  }
+
+  public void scriviFileSpecie(String nomeFile) {
+    try {
+      BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile));
+      for (int indice=0; indice<numeroSpecie; indice++) {
+        uscita.write(((nodo)specie.get(indice)).inTabella().distendiVerticale());
+        uscita.newLine();
+        uscita.newLine();
+        uscita.newLine();
+      }
+      uscita.close();
+    } catch (IOException e) {messaggi.append("\n" +"errore in scriviFile");}
+  }
+
+  public void scriviFileSpecieHTML(String nomeFile) {
+    String cartella = nomeFile.substring(0, nomeFile.lastIndexOf("."));
+    File cartellaFile = new File(cartella);
+    cartellaFile.mkdir();
+    try {
+      BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile));
+      uscita.write("<html>");
+      uscita.newLine();
+      uscita.write("<head><TITLE>Network Analysis (by Faustino Palma CCIE#8959)</TITLE></head>");
+      uscita.newLine();
+      uscita.write("<body>");
+      uscita.newLine();
+      uscita.newLine();
+      uscita.newLine();
+      uscita.newLine();
+      for (int indice=0; indice<numeroSpecie; indice++) {
+        nodo nodoAttuale = (nodo)specie.get(indice);
+        String nomeLista=cartella+"\\lista_" + (indice+1) + nomeFile.substring(nomeFile.lastIndexOf("\\")+1);
+        lista(indice).scriviFileHTML(nomeLista);
+        nodoAttuale.uscita = uscita;
+
+        nodoAttuale.link="."+cartella.substring(cartella.lastIndexOf("\\"))+"\\lista_"+ (indice+1)
+                            + nomeFile.substring(nomeFile.lastIndexOf("\\")+1);
+        nodoAttuale.stampaHTML();
+        uscita.write("<p></p><p></p>");
+        uscita.newLine();
+        uscita.newLine();
+        uscita.newLine();
+      }
+      uscita.newLine();
+      uscita.write("</body>");
+      uscita.write("</html>");
+      uscita.close();
+    } catch (IOException e) {messaggi.append("\n" +"errore in scriviFile");}
+  }
+}

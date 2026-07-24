@@ -1,0 +1,13 @@
+package distillatore;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali contenute nei comandi Show dell'IOS</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.1
+ */
+
+public class collegamentoDial extends collegamentoIP {
+}

@@ -1,0 +1,178 @@
+package topology;
+import java.util.*;
+
+
+/**
+ * <p>Title: Topology</p>
+ * <p>Description: Disegna un grafo della rete in formato SVG</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Exeleration</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class engine implements Runnable {
+  Thread thread;
+  Random random = new Random(System.currentTimeMillis());
+  volatile boolean start=false;
+  volatile boolean minimizza=false;
+  boolean uscire = false;
+  volatile double Kgaussian=0;
+  double meanCentrality;
+  Graph graph;
+
+  public engine(Graph graph) {
+    this.graph= graph;
+    thread = new Thread(this);
+    thread.start();
+  }
+
+  public void run() {
+    while (true&&!uscire) {
+      if (start) {
+      try {
+        while (!graph.pronto) {Thread.currentThread().sleep(1000);}
+      } catch (InterruptedException err) {}
+        convergence();
+        evaluate_n_centrality();
+        graph.initialPosition(2500);
+        uscire= true;
+      }
+      if (minimizza)
+        minimizza();
+        uscire= true;
+    }
+  }//end public void run()
+//##############################################################################
+
+  void convergence() {
+    boolean updateTaken=true;
+    interfaccia.messaggi.append("\n");
+    int stelline=1;
+    while (updateTaken) {
+      interfaccia.messaggi.append("*");
+      if (stelline%10==0)
+        interfaccia.messaggi.append("\n");
+      updateTaken=false;
+      for (int i=0; i<graph.numLinks(); i++) {
+        for (int j=0;
+             j<graph.node(graph.link(i).source).Vectors.size()&&
+             j<graph.node(graph.link(i).target).Vectors.size();
+             j++)
+        {
+          if (graph.node(graph.link(i).source).vector(j).distance + graph.link(i).distance<
+              graph.node(graph.link(i).target).vector(j).distance )
+          {
+            graph.node(graph.link(i).target).vector(j).distance=
+              graph.node(graph.link(i).source).vector(j).distance + graph.link(i).distance;
+            graph.node(graph.link(i).target).vector(j).nextHop=graph.link(i).source;
+            updateTaken=true;
+          }//end if --> update da source a target
+          if (graph.node(graph.link(i).target).vector(j).distance + graph.link(i).distance<
+              graph.node(graph.link(i).source).vector(j).distance )
+          {
+            graph.node(graph.link(i).source).vector(j).distance=
+              graph.node(graph.link(i).target).vector(j).distance + graph.link(i).distance;
+            graph.node(graph.link(i).source).vector(j).nextHop=graph.link(i).target;
+            updateTaken=true;
+          }//end if <-- update da target a source
+        }//end for
+      }//end for (int i=0; i<graph.Links.size(); i++)
+    }//end while (updateTaken)
+    interfaccia.messaggi.append("\ntabelle completate");
+    for (int i=0; i<graph.numNodes(); i++) {
+      double totale=0;
+      int denominatore=0;
+      for (int j=0; j<graph.node(i).Vectors.size(); j++) {
+        if (graph.node(i).vector(j).distance<Double.MAX_VALUE/2) {
+          totale+=graph.node(i).vector(j).distance;
+          denominatore++;
+        }
+      }
+      double media = totale/denominatore;
+      graph.node(i).centrality=media;
+      if (media<graph.minCentrality) graph.minCentrality=media;
+      if (media>graph.maxCentrality) graph.maxCentrality=media;
+    }
+    graph.meetNeighbors();
+  }//end void convergence()
+
+  void evaluate_n_centrality() {
+    for (int i=0; i<graph.numNodes(); i++) {
+      graph.node(i).n_centrality=0;
+      for (int k=0; k<graph.numNodes(); k++) {
+        graph.node(i).n_centrality+=
+          Math.exp(-Math.pow( (graph.node(k).centrality-graph.node(i).centrality)
+                                /(2*graph.r), 2) );
+      }
+    }
+  }//end void evaluate_n_centrality()
+/*
+  double forceR(int i, int j) {
+    return 2*graph.k_repulsive*Math.exp(-Math.pow((graph.node(i).centrality-graph.node(j).centrality)/graph.r, 2))/
+                   (graph.node(i).centrality+graph.node(j).centrality)*
+                   Math.cos((graph.node(i).n_centrality+graph.node(j).n_centrality)/4*(graph.node(i).angle-graph.node(j).angle))*
+                   Math.sin((graph.node(i).n_centrality+graph.node(j).n_centrality)/4*(graph.node(i).angle-graph.node(j).angle));
+  }
+
+  double energyR(int i, int j) {
+    return graph.k_repulsive*Math.exp(-Math.pow((graph.node(i).centrality-graph.node(j).centrality)/graph.r, 2))/
+                  (graph.node(i).centrality+graph.node(j).centrality)*
+                  Math.pow(Math.cos((graph.node(i).n_centrality+graph.node(j).n_centrality)/4*(graph.node(i).angle-graph.node(j).angle)),2);
+  }
+*/
+  double forceR(int i, int j) {
+    return -2*graph.k_repulsive*Math.exp(-Math.pow((graph.node(i).centrality-graph.node(j).centrality)/graph.r, 2))*
+                  (graph.node(i).n_centrality+graph.node(j).n_centrality)/4/Math.PI*(graph.node(i).angle-graph.node(j).angle)*
+                  Math.exp(-Math.pow((graph.node(i).n_centrality+graph.node(j).n_centrality)/4/Math.PI*(graph.node(i).angle-graph.node(j).angle),2));
+  }
+
+  double energyR(int i, int j) {
+    return graph.k_repulsive*Math.exp(-Math.pow((graph.node(i).centrality-graph.node(j).centrality)/graph.r, 2))*
+                  Math.exp(-Math.pow((graph.node(i).n_centrality+graph.node(j).n_centrality)/4/Math.PI*(graph.node(i).angle-graph.node(j).angle),2));
+  }
+
+  double forceA(int i, int j) {
+    return -graph.k_attratctive/graph.node(i).vector(j).distance*(graph.node(i).angle-graph.node(j).angle);
+  }
+
+  double energyA(int i, int j) {
+    return graph.k_attratctive/2/graph.node(i).vector(j).distance*Math.pow(graph.node(i).angle-graph.node(j).angle, 2);
+  }
+
+  double energy() {
+    double energy=0;
+    for (int i=0; i<graph.numNodes(); i++) {
+      for (int j=0; j<i; j++) {
+        energy+=energyA(i,j)+energyR(i,j);
+      }
+    }
+    return energy;
+  }
+
+  double force(int i) {
+    double force = 0;
+    for (int j=0; j<graph.numNodes(); j++) {
+      if (i!=j) force+= forceA(i,j)+forceR(i,j);
+    }
+    return force;
+  }
+
+  void move(double d, double g) {
+    for (int i=0; i<graph.numNodes(); i++) {
+      graph.node(i).lastDelta=graph.node(i).delta;
+      graph.node(i).delta=d*force(i)-g*graph.node(i).lastDelta;
+    }
+    for (int i=0; i<graph.numNodes(); i++) {
+      graph.node(i).angle+=graph.node(i).delta;
+    }
+  }
+
+  void minimizza() {
+    while (minimizza) {
+      move(graph.delta, 0);
+      interfaccia.label_Energia.setText(""+energy());
+    }
+  }
+
+}

@@ -1,0 +1,226 @@
+// Permissions for everyone.
+grant {
+  permission java.util.PropertyPermission "java.version", "read";
+  permission java.util.PropertyPermission "java.vendor", "read";
+  permission java.util.PropertyPermission "java.vendor.url", "read";
+  permission java.util.PropertyPermission "java.class.version", "read";
+  permission java.util.PropertyPermission "os.name", "read";
+  permission java.util.PropertyPermission "os.version", "read";
+  permission java.util.PropertyPermission "os.arch", "read";
+  permission java.util.PropertyPermission "file.separator", "read";
+  permission java.util.PropertyPermission "path.separator", "read";
+  permission java.util.PropertyPermission "line.separator", "read";
+  permission java.util.PropertyPermission "java.specification.version", "read";
+  permission java.util.PropertyPermission "java.specification.vendor", "read";
+  permission java.util.PropertyPermission "java.specification.name", "read";
+  permission java.util.PropertyPermission "java.vm.specification.version", "read";
+  permission java.util.PropertyPermission "java.vm.specification.vendor", "read";
+  permission java.util.PropertyPermission "java.vm.specification.name", "read";
+  permission java.util.PropertyPermission "java.vm.version", "read";
+  permission java.util.PropertyPermission "java.vm.vendor", "read";
+  permission java.util.PropertyPermission "java.vm.name", "read";
+  permission java.util.PropertyPermission "one.world.*", "read";
+  permission java.util.PropertyPermission "caffeine.mark.rating", "read";
+  permission java.util.PropertyPermission "mime.config.name", "read";
+
+  /*
+   * Showing windows without a warning banner may lead to attacks. But
+   * the banner is too annoying to present it by default.
+   */
+  permission java.awt.AWTPermission "showWindowWithoutWarningBanner";
+};
+
+// Permissions for one.world itself.
+grant codeBase "file:${one.world.home}/bin/one.world.jar" {
+
+  /*
+   * one.util.Guid (privileged)
+   *
+   * Load native library.
+   */
+  permission java.lang.RuntimePermission "loadLibrary.one_util_Guid";
+
+  /*
+   * one.world.Main
+   *
+   * Start one.world, read the configuration file, set system
+   * properties, and exit the JVM.
+   */
+  permission one.world.core.SystemPermission "startUp";
+  permission java.io.FilePermission "config/one.world.config", "read";
+  permission java.util.PropertyPermission "user.dir", "read";
+  permission java.util.PropertyPermission "one.world.*", "write";
+  permission java.util.PropertyPermission "caffeine.mark.rating", "write";
+  permission java.util.PropertyPermission "mime.config.name", "write";
+  permission java.lang.RuntimePermission "exitVM";
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
+  /*
+   * one.world.Shell
+   *
+   * Read script and data files, set one.world related system
+   * properties, and access all system properties.
+   */
+  permission java.io.FilePermission "scripts", "read";
+  permission java.io.FilePermission "scripts${/}-", "read";
+  permission java.io.FilePermission "data", "read,write,delete";
+  permission java.io.FilePermission "data${/}-", "read,write,delete";
+  permission java.util.PropertyPermission "*", "read,write";
+
+  /*
+   * one.world.core.Component
+   *
+   * Spawn threads
+   */
+  permission one.world.core.SystemPermission "spawnThread";
+
+  /*
+   * one.world.core.Environment.Output
+   *
+   * Substitute objects during checkpointing and migration.
+   */
+  permission java.io.SerializablePermission "enableSubstitution";
+
+  /*
+   * one.world.core.ProtectionDomain
+   *
+   * Access classes on class path. Add the directories with
+   * application-specific class files and the location of
+   * application-specific jar files here.
+   */
+  permission java.io.FilePermission "bin${/}one.world.jar", "read";
+  permission java.io.FilePermission "bin${/}one.tools.jar", "read";
+  permission java.io.FilePermission "bin${/}one.apps.jar", "read";
+  permission java.io.FilePermission "bin${/}db.jar", "read";
+  permission java.io.FilePermission "bin${/}BCEL.jar", "read";
+
+  /*
+   * one.world.core.ProtectionDomain
+   *
+   * Create class loader.
+   */
+  permission java.lang.RuntimePermission "createClassLoader";
+
+  /*
+   * one.world.Shell, one.world.core.RequestManager,
+   * one.world.core.Environment, one.world.core.ThreadPool,
+   * one.world.core.EventLoop
+   *
+   * one.world.util.Timer (privileged)
+   *
+   * Manage environments.
+   */
+  permission one.world.core.SystemPermission "manageEnvironment";
+
+  /*
+   * one.world.core.Tuple (privileged)
+   *
+   * Access all declared members of a class.
+   */
+  permission java.lang.RuntimePermission "accessDeclaredMembers";
+
+  /*
+   * one.world.core.Tuple (privileged)
+   *
+   * Access class loader of a class.
+   */
+  permission java.lang.RuntimePermission "getClassLoader";
+
+  /*
+   * one.world.core.Tuple (privileged)
+   * one.world.util.ComposableHandler (privileged)
+   *
+   * Access contents of all fields of a class.
+   */
+  permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+
+  /*
+   * one.world.io.TupleStore
+   *
+   * Access tuple storage file hierarchy.
+   */
+  permission java.io.FilePermission "${one.world.store.root}${/}-",
+    "read,write,delete";
+
+  /*
+   * Berkeley DB
+   *
+   * Read library name system propery and load native libraries.
+   */
+  permission java.util.PropertyPermission "sleepycat.db.libname", "read";
+  permission java.lang.RuntimePermission "loadLibrary.libdb_java32";
+  permission java.lang.RuntimePermission "loadLibrary.db_java-3.2";
+
+  /*
+   * one.world.io.DatagramIO, one.world.io.NetworkIO
+   *
+   * Communicate over sockets.
+   */
+  permission java.net.SocketPermission "*", "connect,listen,accept";
+
+  /*
+   * one.world.core.SystemLog, one.world.io.DatagramIO,
+   * one.world.io.NetworkIO, one.world.io.PendingInputRequests,
+   * one.world.io.TupleStore, one.world.util.SystemLog (all
+   * privileged)
+   *
+   * Access the system log.
+   */
+  permission one.world.core.SystemPermission "useLog";
+
+  /*
+   * one.world.util.Log (privileged)
+   *
+   * Access the root console.
+   */
+  permission one.world.core.SystemPermission "useConsole";
+
+  /*
+   * one.net.MimeTypes (privileged)
+   *
+   * Read the MIME configuration file.
+   */
+  permission java.io.FilePermission "config/mime.config", "read";
+
+};
+
+// Permissions for one.tools.
+grant codeBase "file:${one.world.home}/bin/one.tools.jar" {
+  // The debugger needs to be able to unwrap event handlers.
+  permission one.world.core.SystemPermission "manageEnvironment";
+};
+
+// Permissions for one.apps.
+grant codeBase "file:${one.world.home}/bin/one.apps.jar" {
+  // one.toys.Mover needs to be able to resolve IP addresses.
+  permission java.net.SocketPermission "*", "resolve";
+
+  // one.net.http.HttpServer needs to be able to spawn threads and
+  // accept connections.
+
+  /*
+   * one.net.http.HttpServer
+   *
+   * Spawn threads, listen and resolve local host, and accept and
+   * resolve other hosts.
+   */
+  permission one.world.core.SystemPermission "spawnThread";
+  permission java.net.SocketPermission "localhost", "listen,resolve";
+  permission java.net.SocketPermission "*", "accept,resolve";
+
+  // one.radio needs to be able to play and record sound.
+  permission javax.sound.sampled.AudioPermission "play";
+  permission javax.sound.sampled.AudioPermission "record";
+};
+
+// Permissions for Berkeley DB.
+grant codeBase "file:${one.world.home}/bin/db.jar" {
+  permission java.lang.RuntimePermission "loadLibrary.libdb_java32";
+  permission java.lang.RuntimePermission "loadLibrary.db_java-3.2";
+  permission java.util.PropertyPermission "user.dir", "read";
+  permission java.util.PropertyPermission "sleepycat.db.libname", "read";
+};
+
+// Permissions for BCEL.
+grant codeBase "file:${one.world.home}/bin/BCEL.jar" {
+  permission java.util.PropertyPermission "JavaClass.debug", "read";
+};

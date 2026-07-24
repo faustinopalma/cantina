@@ -1,0 +1,95 @@
+package distillatore;
+
+import java.awt.*;
+import javax.swing.*;
+import com.borland.jbcl.layout.*;
+import java.awt.event.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali contenute nei comandi Show dell'IOS</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.1
+ */
+
+public class Dialog_add_dialer_map extends JDialog {
+  rete rete;
+  JPanel panel1 = new JPanel();
+  XYLayout xYLayout1 = new XYLayout();
+  TextArea textArea1 = new TextArea();
+  Button button_add = new Button();
+  TextField TextField_dialer_number = new TextField();
+  Label label_numero = new Label();
+  TextField textField_indirizzo = new TextField();
+  Label label_indirizzo_IP = new Label();
+  TextField textField_nome = new TextField();
+  Label label_nome = new Label();
+  Button button_add_map = new Button();
+
+  public Dialog_add_dialer_map(Frame frame, String title, boolean modal, rete rete) {
+    super(frame, title, modal);
+    try {
+      jbInit();
+      pack();
+    }
+    catch(Exception ex) {
+      ex.printStackTrace();
+    }
+    this.rete = rete;
+  }
+
+  public Dialog_add_dialer_map(rete rete) {
+    this(null, "", false, rete);
+  }
+  void jbInit() throws Exception {
+    panel1.setLayout(xYLayout1);
+    button_add.setLabel("Add");
+    button_add.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mouseReleased(MouseEvent e) {
+        button_add_mouseReleased(e);
+      }
+    });
+    label_numero.setText("Numero");
+    label_indirizzo_IP.setText("Indirizzo IP");
+    label_nome.setText("Nome");
+    button_add_map.setLabel("Add map");
+    button_add_map.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mouseReleased(MouseEvent e) {
+        button_add_map_mouseReleased(e);
+      }
+    });
+    getContentPane().add(panel1);
+    panel1.add(button_add,                new XYConstraints(260, 110, 110, 115));
+    panel1.add(textArea1,         new XYConstraints(20, 80, 230, 145));
+    panel1.add(TextField_dialer_number,  new XYConstraints(20, 40, 110, 20));
+    panel1.add(label_indirizzo_IP,  new XYConstraints(140, 20, 110, 20));
+    panel1.add(textField_indirizzo,   new XYConstraints(140, 40, 110, 20));
+    panel1.add(textField_nome,    new XYConstraints(260, 40, 110, 20));
+    panel1.add(label_nome,   new XYConstraints(260, 20, 110, 20));
+    panel1.add(label_numero,  new XYConstraints(20, 20, 110, 20));
+    panel1.add(button_add_map,  new XYConstraints(261, 81, 111, 20));
+  }
+
+  void button_add_mouseReleased(MouseEvent e) {
+    nodo virtualnode = new nodo("", Frame1.messaggi);
+    distillatore distilla_input = new distillatore(textArea1.getText(), Frame1.messaggi);
+    String[] maps=  distilla_input.trovaPrendiRegularExp(".+");
+    for (int i=0; i< maps.length; i++) {
+      distillatore distilla_riga = new distillatore(maps[i], Frame1.messaggi);
+      rete.dialer_map_number.add( distilla_riga.trovaPrendiParola("Numero:", 2));
+      rete.dialer_map_address.add( distilla_riga.trovaPrendiParola("Indirizzo:", 2));
+      rete.dialer_map_name.add( distilla_riga.trovaPrendiParola("Nome:", 2));
+    }
+    dispose();
+  }
+
+  void button_add_map_mouseReleased(MouseEvent e) {
+    if (textArea1.getText().compareTo("")!=0) textArea1.append("\n");
+    textArea1.append("Numero: "+TextField_dialer_number.getText()+" "
+                     +"Indirizzo: "+textField_indirizzo.getText());
+    if (textField_nome.getText().compareTo("")!=0)
+      textArea1.append(" Nome: "+textField_nome.getText());
+  }
+}

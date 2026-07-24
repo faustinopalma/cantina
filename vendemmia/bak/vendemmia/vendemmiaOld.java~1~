@@ -1,0 +1,47 @@
+package vendemmia;
+import java.io.*;
+
+/**
+ * <p>Title: Aladino</p>
+ * <p>Description: Apre una serie di sessioni telnet verso una lista di indirizzi ed esegue un insieme prestailito di comandi</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class vendemmia {
+
+  public vendemmia() {
+  }
+
+
+
+
+//----------<<<<<<<<<<<<<<<<<<<<<<<< >>>>>>>>>>>>>>>>>>>>>>>>----------------
+  public static void main(String[] args) {
+    //teleconnetti teleconnetti1 = new teleconnetti();
+    configurazione conf = new configurazione();
+    lotteria lotteria_uno = new lotteria(conf);
+    censitore[] censitore_x = new censitore[conf.numeroCensitori];
+    for (int i = 0; i < conf.numeroCensitori; i++) {
+      censitore_x[i] = new censitore(lotteria_uno, conf);
+      try {
+        Thread.currentThread().sleep(10000);
+      } catch (InterruptedException e) {}
+    }
+
+
+    try {
+      for (int i = 0; i < conf.numeroCensitori; i++) {                                                                //--------------------------------
+        censitore_x[i].censitoreThread.join();                                //aspetta la fine di censitore_uno
+      }
+    } catch (InterruptedException e) {System.out.println(e.toString() ); } //--------------------------------
+
+    try {
+      lotteria_uno.scriviFile.close();
+      lotteria_uno.scriviFileFalliti.close();
+    } catch (IOException e) {}
+
+  }
+}

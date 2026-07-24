@@ -1,0 +1,193 @@
+package vendemmia;
+import java.io.*;
+import com.oroinc.net.telnet.*;
+import com.oroinc.net.*;
+import java.awt.*;
+
+/**
+ * <p>Title: Aladino</p>
+ * <p>Description: Apre una serie di sessioni telnet verso una lista di indirizzi ed esegue un insieme prestailito di comandi</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class registratore implements Runnable {
+
+  TextArea messaggi;
+  Checkbox vedo;
+  String host;
+  int porta;
+  public TelnetClient connessione;
+  public OutputStream domande;
+  public InputStream risposte;
+  public boolean connesso;
+  public StringBuffer bobina = new StringBuffer("");
+  private volatile boolean gira = false;
+  private volatile boolean acceso = true;
+  public volatile boolean visualizza = false;
+  public long tempo = 0;
+  Thread registratoreThread;
+
+  public registratore(String host, int porta, TextArea messaggi, Checkbox vedo) {
+    registratoreThread = new Thread(this, "registratore");
+    this.messaggi = messaggi;
+    this.vedo=vedo;
+    this.host = host;
+    this.porta = porta;
+    connesso = false;
+    connessione = new TelnetClient();
+    int tentativo = 0;
+    while ( (tentativo < 3) && !connesso ) {
+      try {
+        connessione.connect(host, porta );
+        connesso = connessione.isConnected();
+      } catch (IOException err) {}
+      tentativo++;
+      if (connesso) {
+        domande = connessione.getOutputStream();
+        risposte = connessione.getInputStream();
+      }
+    }// a questo punto ci dovrebbe essere la connessione aperta
+    tempo = System.currentTimeMillis();
+    registratoreThread.start();
+  }
+
+
+  //Metodo indispensabile ad implementare Runtime, questo metodo sarà lanciato automaticamente dalla classe Thread???
+  public void run() {
+    int carattere;
+    StringBuffer riga = new StringBuffer();
+    try {
+      while (acceso) {
+        while (acceso && gira) {
+          carattere = risposte.read();
+          try {
+            Thread.currentThread().sleep(1);
+          } catch (InterruptedException e) {}
+          bobina.append((char) carattere);
+          if (visualizza&&false||vedo.getState()) {
+            if ( carattere>=20&&carattere<=126 ) {
+              riga.append((char) carattere);
+              //messaggi.append(String.valueOf ((char) carattere));
+            }
+            if (carattere==13) {
+              messaggi.append(riga.toString()+"\n");
+              riga.delete(0, riga.length());
+            }
+          }
+          tempo = System.currentTimeMillis();
+        }
+      } // continua fino allo "spegnimento"
+    } catch (IOException e) {messaggi.append("\n" +"\nFlusso IO dell'oggetto registratore chiuso"); }
+  } //fine di run()
+
+  public void registra() {
+    gira = true;
+  }
+
+  public void fermo() {
+    gira = false;
+  }
+
+  public void spegni() {
+    acceso = false;
+    try {
+      connessione.disconnect();
+    } catch (IOException err) {}
+  }
+
+  public String riavvolgi() {
+    String copiaBobina = bobina.toString();
+    int lunghezzaBobina = bobina.length();
+    bobina.delete(0,lunghezzaBobina);
+    return copiaBobina;
+  }
+
+  // i metodi "aspettiamo" servono ad aspettare che la bobina si stabilizzi, cioè che resti della stessa dimensione per un tempo ragionevole
+  public boolean aspettaCaratteri(int quanti) {
+    int nonEsagerare = 0;
+    int lunghezzaIniziale = bobina.length();
+    try {
+      int lunghezzaAttuale = lunghezzaIniziale;
+      while ( (lunghezzaAttuale - lunghezzaIniziale <= quanti) && (nonEsagerare < 3000) ) {
+        Thread.currentThread().sleep(100);
+        nonEsagerare++;
+      }
+    } catch (InterruptedException e) {}
+    return nonEsagerare < 3000;
+  }
+
+  public boolean aspettaCaratteriTempo(int quanti, long tempoMinimoMilliSec) {
+    int nonEsagerareCaratteri = 0;
+    int lunghezzaIniziale = bobina.length();
+    try {
+      int lunghezzaAttuale = lunghezzaIniziale;
+      while ( (lunghezzaAttuale - lunghezzaIniziale <= quanti) && (nonEsagerareCaratteri < 3000) ) {
+        Thread.currentThread().sleep(100);
+        lunghezzaAttuale = bobina.length();
+        nonEsagerareCaratteri++;
+      }
+    } catch (InterruptedException e) {messaggi.append("\n" +"InterruptedException in aspettaCaratteriTempo"); }
+    int nonEsagerareTempo = 0;
+    try {
+      while ((System.currentTimeMillis() - tempo < tempoMinimoMilliSec) && (nonEsagerareTempo < 300 ) ) {
+        Thread.currentThread().sleep(tempoMinimoMilliSec);
+        nonEsagerareTempo++;
+      }
+    } catch (InterruptedException e) {messaggi.append("\n" +"InterruptedException in aspettaCaratteriTempo"); }
+    return (nonEsagerareCaratteri < 3000) && (nonEsagerareTempo < 300);
+  }
+
+  public boolean aspettiamo() {
+    int nonEsagerare = 0;
+    try {
+      Thread.currentThread().sleep(1000);
+      while ((System.currentTimeMillis() - tempo < 1000) && (nonEsagerare < 300 ) ) {
+        Thread.currentThread().sleep(1000);
+        nonEsagerare++;
+      }
+    } catch (InterruptedException e) {}
+    return nonEsagerare < 300;
+  }
+
+  public boolean aspettiamo(long tempoMinimoMilliSec) {
+    int nonEsagerare = 0;
+    try {
+      Thread.currentThread().sleep(tempoMinimoMilliSec);
+      while ((System.currentTimeMillis() - tempo < tempoMinimoMilliSec) && (nonEsagerare < 300 ) ) {
+        Thread.currentThread().sleep(tempoMinimoMilliSec);
+        nonEsagerare++;
+      }
+    } catch (InterruptedException e) {}
+    return nonEsagerare < 300;
+  }
+
+  public boolean aspettiamo(long tempoMinimoMilliSec, long moltiplicato) {
+    int nonEsagerare = 0;
+    try {
+      Thread.currentThread().sleep(tempoMinimoMilliSec);
+      while ((System.currentTimeMillis() - tempo < tempoMinimoMilliSec) && (nonEsagerare < moltiplicato ) ) {
+        Thread.currentThread().sleep(tempoMinimoMilliSec);
+        nonEsagerare++;
+      }
+    } catch (InterruptedException e) {}
+    return nonEsagerare < moltiplicato;
+  }
+
+  public void scrivi(String parole) throws IOException {
+    byte[] paroleByte = new byte[parole.length()];
+    for (int i=0; i<parole.length(); i++) {
+      paroleByte[i] = (byte) parole.charAt(i);
+    }
+    domande.write( paroleByte );
+    domande.flush();
+  }
+
+  public void invio() throws IOException {
+    domande.write(13);
+    domande.flush();
+  }
+
+} // fine di registratore

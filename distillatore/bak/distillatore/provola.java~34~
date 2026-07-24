@@ -1,0 +1,47 @@
+package distillatore;
+import java.awt.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali contenute nei comandi Show dell'IOS</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.1
+ */
+
+public class provola {
+
+TextArea messaggi = new TextArea();
+  public provola() {
+    rete rete = new rete();
+    nodo nodo1 = new nodo("nodo1", messaggi);
+    nodo1.aggiungiCollegamento("192.168.1.11", "255.255.255.0");
+    nodo1.aggiungiCollegamento("192.168.2.12", "255.255.255.0");
+    nodo1.aggiungiCollegamento("192.168.3.13", "255.255.255.0");
+
+    nodo nodo2 = new nodo("nodo2", messaggi);
+    nodo2.aggiungiCollegamento("192.168.1.14", "255.255.255.0");
+    nodo2.aggiungiCollegamento("192.168.2.16", "255.255.255.0");
+    nodo2.aggiungiCollegamento("192.168.6.13", "255.255.255.0");
+    nodo2.aggiungiCollegamento("192.168.7.13", "255.255.255.0");
+
+    nodo nodo3 = new nodo("nodo2", messaggi);
+    nodo3.aggiungiCollegamento("192.168.7.14", "255.255.255.0");
+
+    nodo nodo4 = new nodo("nodo2", messaggi);
+    nodo4.aggiungiCollegamento("192.168.7.15", "255.255.255.0");
+
+    rete.aggiungiNodo(nodo1);
+    rete.aggiungiNodo(nodo2);
+    rete.aggiungiNodo(nodo3);
+    rete.aggiungiNodo(nodo4);
+
+    rete.scriviFile("C:\\ClientiCensitiTelecom\\prova\\provola.txt");
+
+
+  }
+  public static void main(String[] args) {
+    provola provola1 = new provola();
+  }
+}

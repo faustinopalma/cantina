@@ -1,0 +1,422 @@
+package distillatore;
+
+import java.awt.*;
+import java.io.*;
+import java.util.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali contenute nei comandi Show dell'IOS</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.1
+ */
+
+public class distillaUnoPerUno
+    implements Runnable {
+  TextArea messaggi = new TextArea();
+  configurazione conf = new configurazione();
+  Thread unoPerUno;
+  rete rete;
+
+  public distillaUnoPerUno(configurazione conf, rete rete, TextArea messaggi) {
+    this.messaggi = messaggi;
+    this.conf = conf;
+    this.rete = rete;
+    unoPerUno = new Thread(this, "unoPerUno");
+    unoPerUno.start();
+  }
+
+  public void run() {
+    try {
+      tabella lavagna = new tabella(messaggi);
+      elenco elencoPath = new elenco(conf.cartellaVinaccia, messaggi);
+      foresta forestaMia = new foresta();
+      foresta forestaDLSW = new foresta();
+      foresta forestaISDN = new foresta();
+      foresta forestaStatiche = new foresta();
+      foresta forestaDistributeList = new foresta();
+      foresta forestaRedistribute = new foresta();
+      foresta forestaNTP = new foresta();
+      foresta forestaSicurezzaComandiBase = new foresta();
+      foresta forestaVersioneIOS = new foresta();
+      foresta forestaAAATacacs = new foresta();
+      foresta forestaAccessoCON_VTY_AUX = new foresta();
+      foresta forestaTipiLogging = new foresta();
+      foresta forestaConfReg = new foresta();
+      foresta forestaVerificaLoopback = new foresta();
+      foresta forestaSnmpTrap = new foresta();
+      foresta forestaProtocolliRouting = new foresta();
+      foresta forestaSummarization = new foresta();
+      foresta foresta_numeri_dial = new foresta();
+
+      for (int j = 0; j < elencoPath.getLunghezza(); j++) {
+        messaggi.append("\n" + elencoPath.getElemento(j));
+        esecutore scrivano = new esecutore(elencoPath.getElemento(j), lavagna,
+                                           messaggi);
+        lavagna.addRuotatore();
+
+        //*******************************************************************************
+         // per ogni campo inserire una riga come le seguenti
+
+        String versioneIOS_a = scrivano.scriviVersioneIOS_a();
+        String versioneIOS_b = scrivano.scriviVersioneIOS_b();
+        String versioneIOS_c = scrivano.scriviVersioneIOS_c();
+        String versioneIOS = versioneIOS_a + " " + versioneIOS_b + " " +
+            versioneIOS_c;
+        lavagna.inserire("VersioneIOS", versioneIOS_a);
+        lavagna.inserire("TipoIOS", versioneIOS_b);
+        //lavagna.inserire("Banner", scrivano.scriviBanner() );
+        lavagna.inserire("User", scrivano.scriviUser());
+        lavagna.inserire("UserPassword", scrivano.scriviUserPassword());
+        lavagna.inserire("EnablePassword", scrivano.scriviEnablePassword());
+        //prende l'indirizzo di discoveri che servirà al metodo pet il TD
+        String indirizzoDiscovery = scrivano.scriviIndirizzoDiscovery();
+        lavagna.inserire("IndirizzoDiscovery", indirizzoDiscovery);
+        String nomeFile = elencoPath.getElemento(j);
+        try {
+          nomeFile = nomeFile.substring(nomeFile.lastIndexOf("\\") + 1);
+        }
+        catch (NullPointerException err) {}
+        //lavagna.inserire("NomeFile", nomeFile );
+        String modelloRouter = scrivano.scriviModelloRouter();
+        lavagna.inserire("ModelloRouter", modelloRouter);
+        lavagna.inserire("IndirizzoLoopBack", scrivano.scriviIndirizzoLoopBack());
+        lavagna.inserire("SNMPcommunity", scrivano.scriviCommunity());
+        //lavagna.inserire("BannerSI/NO", scrivano.scriviBannerSiNo() );
+        //lavagna.inserire("NumeroISDN", scrivano.scriviNumeriNellaDescriptionBRI() );
+        //lavagna.inserire("DLCI", scrivano.scriviDLCItutti() );
+        //metodo per il TD "speciale"
+        //lavagna.inserire("TD", scrivano.scriviIdentificativiTD() );
+        //lavagna.inserire("HostName", scrivano.scriviHostName() );
+        String HostName = scrivano.scriviHostNameDaShVer();
+        //lavagna.inserire("HostName", HostName );
+        //lavagna.inserire("ip_p2p", scrivano.scriviIP_P2Ptutti() );
+        //lavagna.inserire("ip_dial", scrivano.scriviIP_P2Pdialer() );
+        lavagna.inserire("Tacacs", scrivano.scriviTacacsSiNo());
+        String fileIOS = scrivano.scriviFileIOS();
+        lavagna.inserire("FileIOS", fileIOS);
+        lavagna.inserire("RAM e Shared", scrivano.scriviRAMShared());
+        lavagna.inserire("Flash", scrivano.scriviFlash());
+        lavagna.inserire("SerialNumber", scrivano.scriviSerialNumber());
+        lavagna.inserire("ConfReg", scrivano.scriviConfReg());
+        lavagna.inserire("numInterfacceSerialiNonWAN",
+                         "" + scrivano.scriviContaSerialiNonWAN());
+        //lavagna.inserire("bandwidthBassa", String.valueOf(scrivano.bandwidthBassa()));
+        String pathFileVinaccia = elencoPath.getElemento(j);
+        String nomeFileVinaccia = null;
+        String cartellaFileVinaccia = null;
+        String cartellaFileNote = null;
+        String nomeFileNote = null;
+        String pathFileNote = null;
+        String pathFileNoteShort = null;
+        String nomeFileShRun = null;
+        String pathFileShRun = null;
+        String nomeFileShTech = null;
+        String pathFileShTech = null;
+        String nomeFileShLogging = null;
+        String pathFileShLogging = null;
+        try {
+          nomeFileVinaccia = pathFileVinaccia.substring(pathFileVinaccia.
+              lastIndexOf("\\") + 1);
+          cartellaFileVinaccia = pathFileVinaccia.substring(0,
+              pathFileVinaccia.lastIndexOf("\\"));
+          nomeFileNote = "note " + nomeFileVinaccia.substring(8);
+          nomeFileShRun = "sh run " + nomeFileVinaccia.substring(8);
+          nomeFileShTech = "sh tech " + nomeFileVinaccia.substring(8);
+          nomeFileShLogging = "sh logging " + nomeFileVinaccia.substring(8);
+          pathFileNote = cartellaFileVinaccia.substring(0,
+              cartellaFileVinaccia.length() - 8) + "note\\" + nomeFileNote;
+          //pathFileShRun = cartellaFileVinaccia.substring(0, cartellaFileVinaccia.length()-8)+"sh run\\"+nomeFileShRun;
+          //pathFileShTech = cartellaFileVinaccia.substring(0, cartellaFileVinaccia.length()-8)+"sh tech\\"+nomeFileShTech;
+
+          pathFileNoteShort = "..\\note\\" + nomeFileNote;
+          pathFileShRun = "..\\sh run\\" + nomeFileShRun;
+          pathFileShTech = "..\\sh tech\\" + nomeFileShTech;
+          pathFileShLogging = "..\\sh logging\\" + nomeFileShLogging;
+        }
+        catch (NullPointerException err) {}
+        try {
+          File cartellaNote = new File(conf.cartellaVinaccia.substring(0,
+              conf.cartellaVinaccia.length() - 8) + "\\note");
+          if (!cartellaNote.exists()) {
+            cartellaNote.mkdir();
+          }
+          File fileNote = new File(pathFileNote);
+          if (!fileNote.exists()) {
+            fileNote.createNewFile();
+          }
+        }
+        catch (IOException err) {}
+
+        //String pathFileTipi =(conf.fileTipi.substring(0,conf.fileTipi.length()-3)+"html");
+        //String pathFileDLSW = (conf.fileTipiDLSW.substring(0,conf.fileTipiDLSW.length()-3)+"html");
+        //String pathFilePeerISDN = (conf.filePeerISDN.substring(0,conf.filePeerISDN.length()-3)+"html");
+        //String pathFileStatiche = (conf.fileStatiche.substring(0,conf.fileStatiche.length()-3)+"html");
+        //String pathFileDistribute = (conf.fileDistribute.substring(0,conf.fileDistribute.length()-3)+"html");
+        //String pathFileRedistribute = (conf.fileRedistribute.substring(0,conf.fileRedistribute.length()-3)+"html");
+
+        String pathFileTipi = "..\\Configurazioni\\Tipi.html";
+        String pathFileDLSW = "..\\Configurazioni\\TipiDLSW.html";
+        String pathFilePeerISDN = "..\\Configurazioni\\PeerISDN.html";
+        String pathFileStatiche = "..\\Configurazioni\\Statiche.html";
+        String pathFileDistribute = "..\\Configurazioni\\Distribute.html";
+        String pathFileRedistribute = "..\\Configurazioni\\Redistribute.html";
+        String pathFileNTP = "..\\Configurazioni\\NTP.html";
+        String pathFileSicurezzaComandiBase =
+            "..\\Configurazioni\\sicurezzaComandiBase.html";
+
+        int tipoRouterInt = forestaMia.aggiungiPianta(scrivano.
+            generaAlberoTrivial("Router"), rete.prossimoIdentificativo(),
+            HostName);
+        lavagna.inserire("TipoRouter", String.valueOf(tipoRouterInt));
+        int tipoConfDLSW = forestaDLSW.aggiungiPianta(scrivano.generaAlberoDLSW(
+            "dlsw+"), rete.prossimoIdentificativo(), HostName);
+        lavagna.inserire("TipoConfDLSW", String.valueOf(tipoConfDLSW));
+        int tipoPeerISDN = forestaISDN.aggiungiPianta(scrivano.generaAlberoISDN(
+            "isdn"), rete.prossimoIdentificativo(), HostName);
+        lavagna.inserire("ISDNremoti", String.valueOf(tipoPeerISDN));
+        int tipoStatiche = forestaStatiche.aggiungiPianta(scrivano.
+            generaAlberoStatiche("Statiche"), rete.prossimoIdentificativo(),
+            HostName);
+        lavagna.inserire("TipiStatiche", String.valueOf(tipoStatiche));
+        int tipoDistributeList = forestaDistributeList.aggiungiPianta(scrivano.
+            generaAlberoDistributeList("Distribute"),
+            rete.prossimoIdentificativo(), HostName);
+        lavagna.inserire("TipiDistribuiteList",
+                         String.valueOf(tipoDistributeList));
+        int tipoRedistribute = forestaRedistribute.aggiungiPianta(scrivano.
+            generaAlberoRedistribute("redistribute"),
+            rete.prossimoIdentificativo(), HostName);
+        lavagna.inserire("configurazioneRedistribute",
+                         String.valueOf(tipoRedistribute));
+        int tipoNTP = forestaNTP.aggiungiPianta(scrivano.generaAlberoNTP("NTP"),
+                                                rete.prossimoIdentificativo(),
+                                                HostName);
+        lavagna.inserire("configurazioneNTP", "" + tipoNTP);
+        int tipoSicurezzaComandiBase = forestaSicurezzaComandiBase.
+            aggiungiPianta(scrivano.generaAlberoSicurezzaComandiBase(
+            "SicurezzaComandiBase"), rete.prossimoIdentificativo(), HostName);
+        int tipoVersioneIOS = forestaVersioneIOS.aggiungiPianta(scrivano.
+            generaAlberoRelease("versioneIOS"), rete.prossimoIdentificativo(),
+            HostName);
+        int tipoAccesso_CON_VTY_AUX = forestaAccessoCON_VTY_AUX.aggiungiPianta(
+            scrivano.generaAlberoAccessoVTY_CON_AUX("CON_VTY_AUX"),
+            rete.prossimoIdentificativo(), HostName);
+        int tipoAAATacacs = forestaAAATacacs.aggiungiPianta(scrivano.
+            generaAlberoAAATacacs("AAATacacs"), rete.prossimoIdentificativo(),
+            HostName);
+        int tipoLogging = forestaTipiLogging.aggiungiPianta(scrivano.
+            generaAlberoLogging("logging"), rete.prossimoIdentificativo(),
+            HostName);
+        int tipoConfReg = forestaConfReg.aggiungiPianta(scrivano.
+            generaAlberoConfReg("register"), rete.prossimoIdentificativo(),
+            HostName);
+        int tipoVerificaLoopback = forestaVerificaLoopback.aggiungiPianta(
+            scrivano.generaAlberoLoopbackSiNo("verificaLoopback"),
+            rete.prossimoIdentificativo(), HostName);
+        int tipoSnmpTrap = forestaSnmpTrap.aggiungiPianta(scrivano.
+            generaAlberoTrap("snmp trap"), rete.prossimoIdentificativo(),
+            HostName);
+        int tipoProtocolloRouting = forestaProtocolliRouting.aggiungiPianta(
+            scrivano.generaAlberoProtocolliRouting("protocol"),
+            rete.prossimoIdentificativo(), HostName);
+        int tipoSummarization = forestaSummarization.aggiungiPianta(scrivano.
+            generaAlberoSummarization("summary"), rete.prossimoIdentificativo(),
+            HostName);
+
+        scrivano.popola_numeri_dial(foresta_numeri_dial,
+                                    rete.prossimoIdentificativo(), HostName);
+        nodo nodo;
+        if (!rete.flag_dialer_map) {
+          nodo = scrivano.generaNodo();
+        }
+        else {
+          ArrayList dialer_map_number = new ArrayList();
+          ArrayList dialer_map_address = new ArrayList();
+          nodo = scrivano.generaNodoPlus(dialer_map_number, dialer_map_address);
+          rete.dialer_map_number.addAll(dialer_map_number);
+          rete.dialer_map_address.addAll(dialer_map_address);
+        }
+
+        /*
+                if (tipoRouterInt!=0) {
+             String riferimento = pathFileTipi+"#Riferimento:"+String.valueOf(tipoRouterInt);
+                  nodo.aggiungiVariabile("Hardware:", "<a href=\""+riferimento+"\">"+riferimento+"</a>");
+                }
+                if (tipoConfDLSW!=0) {
+             String riferimento = pathFileDLSW+"#Riferimento:"+String.valueOf(tipoConfDLSW);
+                  nodo.aggiungiVariabile("ConfDLSW:", "<a href=\""+riferimento+"\">"+riferimento+"</a>");
+                }
+                if (tipoPeerISDN!=0) {
+                  String riferimento = pathFilePeerISDN+"#Riferimento:"+String.valueOf(tipoPeerISDN);
+                  nodo.aggiungiVariabile("PeerISDN:", "<a href=\""+riferimento+"\">"+riferimento+"</a>");
+                }
+                if (tipoStatiche!=0) {
+                  String riferimento = pathFileStatiche+"#Riferimento:"+String.valueOf(tipoStatiche);
+                  nodo.aggiungiVariabile("Statiche:", "<a href=\""+riferimento+"\">"+riferimento+"</a>");
+                }
+                if (tipoDistributeList!=0) {
+                  String riferimento = pathFileDistribute+"#Riferimento:"+String.valueOf(tipoDistributeList);
+                  nodo.aggiungiVariabile("DistributeList:", "<a href=\""+riferimento+"\">"+riferimento+"</a>");
+                }
+                if (tipoRedistribute!=0) {
+                  String riferimento = pathFileRedistribute+"#Riferimento:"+String.valueOf(tipoRedistribute);
+                  nodo.aggiungiVariabile("Redistribute:", "<a href=\""+riferimento+"\">"+riferimento+"</a>");
+                }
+                if (tipoNTP!=0) {
+             String riferimento = pathFileNTP+"#Riferimento:"+String.valueOf(tipoNTP);
+                  nodo.aggiungiVariabile("NTP:", "<a href=\""+riferimento+"\">"+riferimento+"</a>");
+                }
+         */
+        nodo.aggiungiVariabile("sh run:",
+                               "<a href=\"" + pathFileShRun + "\">" + pathFileShRun +
+                               "</a>");
+        nodo.aggiungiVariabile("sh tech:",
+                               "<a href=\"" + pathFileShTech + "\">" +
+                               pathFileShTech + "</a>");
+        nodo.aggiungiVariabile("sh logging:",
+                               "<a href=\"" + pathFileShLogging + "\">" +
+                               pathFileShLogging + "</a>");
+//        nodo.aggiungiVariabile("note:", "<a href=\""+pathFileNoteShort+"\">"+pathFileNoteShort+"</a>");
+        nodo.aggiungiRamo("Hardware:");
+        nodo.ramo(0).aggiungiVariabile("Modello:",
+                                       scrivano.scriviModelloRouterProcessore());
+        String[] slotSeparati = scrivano.separaSlotShDiag();
+        if (slotSeparati != null) {
+          for (int i = 0; i < slotSeparati.length; i++) {
+            nodo.ramo(0).aggiungiRamo("Slot: " + String.valueOf(i));
+            distillatore distillaSlot = new distillatore(slotSeparati[i],
+                messaggi);
+            ArrayList listaPartNumber =
+                distillaSlot.trovaPrendiProssimoNumeroMultiplo("Part number");
+            ArrayList listaSerialNumber =
+                distillaSlot.trovaPrendiProssimoNumeroMultiplo("Serial number");
+            for (int k = 0; k < listaPartNumber.size(); k++) {
+              String partNumber = (String) listaPartNumber.get(k);
+              partNumber = partNumber.substring(0, partNumber.lastIndexOf("-"));
+              nodo.ramo(0).ramo(i).aggiungiVariabile("Part number", partNumber);
+            }
+            for (int k = 0; k < listaSerialNumber.size(); k++) {
+              String serialNumber = (String) listaSerialNumber.get(k);
+              nodo.ramo(0).ramo(i).aggiungiVariabile("Serial number",
+                  serialNumber);
+            }
+          }
+        }
+        else { //if (slotSeparati != null)
+          ArrayList interfacce = scrivano.distillaShVer.TrovaPrendiContenutoFra(
+              "[0-9]+", "interface");
+          for (int i = 0; i < interfacce.size(); i++) {
+            String stringaInShVer = (String) interfacce.get(i);
+            while (stringaInShVer.indexOf("  ") != -1) {
+              stringaInShVer = stringaInShVer.replaceAll(" {2,100}", " ");
+            }
+            nodo.ramo(0).aggiungiVariabile("interfacce", stringaInShVer);
+          }
+        } //end else {//if (slotSeparati != null)
+        nodo.aggiungiRamo("Software:");
+        nodo.ramo(1).aggiungiVariabile("VersioneIOS:", versioneIOS);
+        nodo.ramo(1).aggiungiVariabile("FileIOS:", fileIOS);
+        rete.aggiungiNodo(nodo);
+        lavagna.inserire("Riferimento",
+                         "<a href=\"" + ".\\Topologia\\" + nodo.identificativo +
+                         ".html" + "\">" + HostName + "</a>");
+      } //end for (int j=0; j < elencoPath.getLunghezza() ;j++)
+      //--------------------------------------------------------------------------
+      //--------------------------------------------------------------------------
+
+      //lavagna.scriviFile(conf.fileGrappa);
+      //forestaMia.scriviFileSpecie(conf.fileTipi);
+      //forestaDLSW.scriviFileSpecie(conf.fileTipiDLSW);
+      //forestaISDN.scriviFileSpecie(conf.filePeerISDN);
+      //forestaStatiche.scriviFileSpecie(conf.fileStatiche);
+      //forestaDistributeList.scriviFileSpecie(conf.fileDistribute);
+      //forestaRedistribute.scriviFileSpecie(conf.fileRedistribute);
+
+//******************************************************************************
+       messaggi.append("\nSemplifica Collegamenti");
+      rete.semplificaCollegamenti();
+      if (rete.dialer_map_address != null) {
+        rete.collegaTuttiDialer();
+      }
+      engine ordenador = new engine(rete);
+      ordenador.scriviElencoHTML(conf.cartellaLavoro + "\\elenco.html");
+      rete.orderLinks();
+      rete.scriviLinksHTML(conf.cartellaLavoro + "\\Links.html");
+      rete.compilaStampaGrappaNuova(conf.cartellaLavoro + "\\GrappaNuova.html");
+//******************************************************************************
+
+      messaggi.append("\nOutput ----> GRAPPA");
+      lavagna.scriviFileHTML(conf.fileGrappaHTML);
+      messaggi.append("\nOutput ----> TOPOLOGIA");
+      File cartellaTopologia = new File(conf.fileTopologia);
+      cartellaTopologia.mkdir();
+      rete.scriviFileSeparati(conf.fileTopologia);
+      rete.scriviFileIndirizzamento(conf.fileTopologia);
+
+      File cartellaConfigurazioni = new File(conf.fileConfigurazioni);
+      cartellaConfigurazioni.mkdir();
+      messaggi.append("\nOutput ----> HARDWARE");
+      forestaMia.scriviFileSpecieHTML(conf.fileTipi.substring(0,
+          conf.fileTipi.length() - 3) + "html");
+      messaggi.append("\nOutput ----> DLSW");
+      forestaDLSW.scriviFileSpecieHTML(conf.fileTipiDLSW.substring(0,
+          conf.fileTipiDLSW.length() - 3) + "html");
+      messaggi.append("\nOutput ----> ISDN");
+      forestaISDN.scriviFileSpecieHTML(conf.filePeerISDN.substring(0,
+          conf.filePeerISDN.length() - 3) + "html");
+      messaggi.append("\nOutput ----> STATICHE");
+      forestaStatiche.scriviFileSpecieHTML(conf.fileStatiche.substring(0,
+          conf.fileStatiche.length() - 3) + "html");
+      messaggi.append("\nOutput ----> DISTRIBUTE LIST");
+      forestaDistributeList.scriviFileSpecieHTML(conf.fileDistribute.substring(
+          0, conf.fileDistribute.length() - 3) + "html");
+      messaggi.append("\nOutput ----> REDISTRIBUTE");
+      forestaRedistribute.scriviFileSpecieHTML(conf.fileRedistribute.substring(
+          0, conf.fileRedistribute.length() - 3) + "html");
+      messaggi.append("\nOutput ----> NTP");
+      forestaNTP.scriviFileSpecieHTML(conf.fileNTP.substring(0,
+          conf.fileNTP.length() - 3) + "html");
+      messaggi.append("\nOutput ----> Comandi Base Sicurezza");
+      forestaSicurezzaComandiBase.scriviFileSpecieHTML(conf.
+          fileSicurezzaComandiBaseHTML);
+      messaggi.append("\nOutput ----> versioneIOS");
+      forestaVersioneIOS.scriviFileSpecieHTML(conf.fileVersioneIOS);
+      messaggi.append("\nOutput ----> ComandiAAATacacs");
+      forestaAAATacacs.scriviFileSpecieHTML(conf.fileAAATacacs);
+      messaggi.append("\nOutput ----> Accesso_CON_VTY_AUX");
+      forestaAccessoCON_VTY_AUX.scriviFileSpecieHTML(conf.
+          fileAccessoCON_VTY_AUX);
+      messaggi.append("\nOutput ----> TipiLogging");
+      forestaTipiLogging.scriviFileSpecieHTML(conf.fileLogging);
+      messaggi.append("\nOutput ----> TipoConfReg");
+      forestaConfReg.scriviFileSpecieHTML(conf.fileConfReg);
+      messaggi.append("\nOutput ----> TipoSnmpTrap");
+      forestaSnmpTrap.scriviFileSpecieHTML(conf.fileTrap);
+      messaggi.append("\nOutput ----> VerificaLoopback");
+      forestaVerificaLoopback.scriviFileSpecieHTML(conf.fileVerificaLoopback);
+      messaggi.append("\nOutput ----> tipoProtololloRouting");
+      forestaProtocolliRouting.scriviFileSpecieHTML(conf.fileProtocolli);
+      messaggi.append("\nOutput ----> tipoSummarization");
+      forestaSummarization.scriviFileSpecieHTML(conf.fileSummarization);
+      foresta_numeri_dial.scriviFileSpecieHTML(conf.cartellaLavoro +
+          "\\Configurazioni\\numeri_dial.html");
+
+      //messaggi.append("\nOutput ----> Graph Description Language");
+      //reteSimple reteSimple = new reteSimple(rete);
+      //reteSimple.scriviFileGDL(conf.fileGDL);
+      rete.scriviFileXML(conf.fileTopologiaXML);
+
+      //if riuscita
+      messaggi.append("\n--------------------------------------------------------------------------------");
+      messaggi.append(
+          "\n--------------------- la grappa è da invecchiare -------------------------");
+      messaggi.append("\n--------------------------------------------------------------------------------");
+    }
+    catch (IOException err) {
+      messaggi.append("\nErrore nell'apertura della cartella di input");
+    }
+  }
+}

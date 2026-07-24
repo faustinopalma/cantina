@@ -1,0 +1,98 @@
+package xmltree;
+import org.w3c.dom.*;
+import org.apache.xerces.dom.*;
+import java.io.*;
+import org.apache.xml.serialize.BaseMarkupSerializer;
+import org.apache.xml.serialize.Method;
+import org.apache.xml.serialize.XMLSerializer;
+import org.apache.xml.serialize.OutputFormat;
+import javax.xml.parsers.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.*;
+import javax.xml.transform.stream.*;
+
+/**
+ * <p>Title: </p>
+ * <p>Description: </p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: </p>
+ * @author unascribed
+ * @version 1.0
+ */
+
+public class html_gen {
+static XMLSerializer xmlSerializer;
+public static void main(String [] args)throws java.io.IOException{
+
+DocumentImpl xmlData=new DocumentImpl();
+Document xmlData2=null;
+Element main=(Element) xmlData.createElement("main");
+main.setAttribute("type","root");
+main.setAttribute("url","root.html");
+main.setAttribute("value","Network Analysis");
+Element child=(Element) xmlData.createElement("child");
+child.setAttribute("type","folder");
+child.setAttribute("url","doc.html");
+child.setAttribute("value","doc1");
+Element child2=(Element) xmlData.createElement("child2");
+child2.setAttribute("type","folder");
+child2.setAttribute("url","doc2.html");
+child2.setAttribute("value","doc2");
+Element nephew=(Element) xmlData.createElement("nephew");
+nephew.setAttribute("type","document");
+nephew.setAttribute("url","nephew.html");
+nephew.setAttribute("value","nephew");
+child.appendChild(nephew);
+main.appendChild(child);
+main.appendChild(child2);
+xmlData.appendChild(main);
+try {
+      DocumentBuilderFactory fabbricaCostruttoriDocumenti = DocumentBuilderFactory.newInstance();
+      DocumentBuilder costruttoreDocumenti = fabbricaCostruttoriDocumenti.newDocumentBuilder();
+      xmlData2 = costruttoreDocumenti.parse("analisi.xml");
+    } catch (Exception err) {}
+
+xml_brain out= new xml_brain(xmlData2);
+
+StringBuffer testo = new StringBuffer();
+    try {
+      BufferedReader testo_file = new BufferedReader(new FileReader("analisi.xml"));
+      boolean uscita = false;
+      while (!uscita) {
+        String riga = testo_file.readLine();
+        if (riga == null) {
+          uscita = true;
+        } else {
+          testo.append(riga);
+        }
+      }
+    testo_file.close();
+    } catch (IOException e) {}
+    try {
+      BufferedWriter scriviFileXML_DTD = new BufferedWriter(new FileWriter("analisi.xml") );
+      scriviFileXML_DTD.write(testo_file.toString());
+      scriviFileXML_DTD.close();
+    } catch (IOException err) {}
+try{
+PrintWriter out1=new PrintWriter(new BufferedWriter(new FileWriter("albero.html")));
+String s=out.retHtml();
+out1.print(s);
+out1.close();
+} catch(IOException e){
+   System.err.print(e.getMessage());
+    }
+try
+        {
+                xmlSerializer = new XMLSerializer(
+                new PrintWriter(
+                new FileOutputStream("albero.xml")),
+                new OutputFormat(Method.XML,null,true));
+            xmlSerializer.serialize(xmlData2);
+        }
+        catch (Exception e)
+        {
+            System.out.println(e);
+            e.printStackTrace();
+        }
+}
+}

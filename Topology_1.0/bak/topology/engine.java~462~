@@ -1,0 +1,238 @@
+package topology;
+import java.util.*;
+
+
+/**
+ * <p>Title: Topology</p>
+ * <p>Description: Disegna un grafo della rete in formato SVG</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Exeleration</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class engine implements Runnable {
+  Thread thread;
+  Random random = new Random(System.currentTimeMillis());
+  volatile boolean pennellare_fast=false;
+  volatile boolean pennellare=false;
+  volatile boolean swappare=false;
+  volatile boolean start=false;
+  boolean uscire = false;
+  volatile double Kgaussian=0;
+  Graph graph;
+
+  public engine(Graph graph) {
+    this.graph= graph;
+    thread = new Thread(this);
+    thread.start();
+  }
+
+  public void run() {
+    while (true&&!uscire) {
+      if (start) {
+      try {
+        while (!graph.pronto) {Thread.currentThread().sleep(1000);}
+      } catch (InterruptedException err) {}
+        convergence();
+        graph.initialPosition(2500);
+        interfaccia.messaggi.append("\nEnergyStart="+energy(graph));
+        uscire= true;
+      }
+      if (pennellare_fast)
+        minimizza_a_pennellate_fast(graph);
+        uscire= true;
+      if (pennellare)
+        minimizza_a_pennellate(graph);
+        uscire= true;
+      if (swappare)
+        minimizza_swappando(graph);
+        uscire= true;
+    }
+  }//end public void run()
+//##############################################################################
+
+  void convergence() {
+    boolean updateTaken=true;
+    interfaccia.messaggi.append("\n");
+    int stelline=1;
+    while (updateTaken) {
+      interfaccia.messaggi.append("*");
+      if (stelline%10==0)
+        interfaccia.messaggi.append("\n");
+      updateTaken=false;
+      for (int i=0; i<graph.numLinks(); i++) {
+        for (int j=0;
+             j<graph.node(graph.link(i).source).Vectors.size()&&
+             j<graph.node(graph.link(i).target).Vectors.size();
+             j++)
+        {
+          if (graph.node(graph.link(i).source).vector(j).distance + graph.link(i).distance<
+              graph.node(graph.link(i).target).vector(j).distance )
+          {
+            graph.node(graph.link(i).target).vector(j).distance=
+              graph.node(graph.link(i).source).vector(j).distance + graph.link(i).distance;
+            graph.node(graph.link(i).target).vector(j).nextHop=graph.link(i).source;
+            updateTaken=true;
+          }//end if --> update da source a target
+          if (graph.node(graph.link(i).target).vector(j).distance + graph.link(i).distance<
+              graph.node(graph.link(i).source).vector(j).distance )
+          {
+            graph.node(graph.link(i).source).vector(j).distance=
+              graph.node(graph.link(i).target).vector(j).distance + graph.link(i).distance;
+            graph.node(graph.link(i).source).vector(j).nextHop=graph.link(i).target;
+            updateTaken=true;
+          }//end if <-- update da target a source
+        }//end for
+      }//end for (int i=0; i<graph.Links.size(); i++)
+    }//end while (updateTaken)
+    interfaccia.messaggi.append("\ntabelle completate");
+
+    for (int i=0; i<graph.numNodes(); i++) {
+      double totale=0;
+      int denominatore=0;
+      for (int j=0; j<graph.node(i).Vectors.size(); j++) {
+        if (graph.node(i).vector(j).distance<Double.MAX_VALUE/2) {
+          totale+=graph.node(i).vector(j).distance;
+          denominatore++;
+        }
+      }
+      double media = totale/denominatore;
+      graph.node(i).centrality=media;
+      if (media<graph.minCentrality) graph.minCentrality=media;
+      if (media>graph.maxCentrality) graph.maxCentrality=media;
+    }
+    graph.meetNeighbors();
+  }
+
+  long energy(Graph graph) {
+    long energy=0;
+    for (int i=0; i<graph.numLinks(); i++) {
+      int s=graph.link(i).source;
+      int t=graph.link(i).target;
+      int ps=graph.node(s).getPosition();
+      int pt=graph.node(t).getPosition();
+      long distance = (new Double(graph.link(i).distance)).longValue();
+      energy+=1/distance*Math.pow(graph.distance(ps, pt), 2);
+      //energy+=Math.pow(graph.distance(ps, pt), 2);
+    }
+    return energy;
+  }//end long energy
+
+  long force(int id, Graph graph) {
+    long force=0;
+    int p=graph.node(id).getPosition();
+    for (int i=0; i<graph.node(id).Neighbors.size(); i++) {
+      int r=graph.node(id).neighbor(i);
+      force+=graph.distance(r, p);
+    }
+    return force;
+  }
+
+  void evaluateForce(Graph graph) {
+    for (int i=0; i<graph.numNodes(); i++) {
+      graph.node(i).force=force(i, graph);
+    }
+  }
+
+  void minimizza_swappando(Graph graph) {
+    while(swappare) {
+      ArrayList urna = new ArrayList(graph.numNodes());
+      ArrayList posizioni = new ArrayList(graph.numNodes());
+      for (int i=0; i<graph.numNodes(); i++) {
+        Integer pos = new Integer(i);
+        urna.add(pos);
+      }
+      for (int i=0; i<graph.numNodes(); i++) {
+        int j=random.nextInt(urna.size());
+        posizioni.add((Integer)urna.get(j));
+        urna.remove(j);
+      }
+      boolean scambio=false;
+      long energia_prima=0;
+      long energia_dopo=0;
+      for (int i=0; i<posizioni.size()&&swappare; i++) {
+        for (int j=0; j<i&&swappare; j++) {
+          int indice_i = ((Integer)posizioni.get(i)).intValue();
+          int indice_j = ((Integer)posizioni.get(j)).intValue();
+          energia_prima = energy(graph);
+          int posizione_scambio=graph.node(indice_i).getPosition();
+          graph.node(indice_i).setPosition(graph.node(indice_j).getPosition());
+          graph.node(indice_j).setPosition(posizione_scambio);
+          energia_dopo = energy(graph);
+          if (energia_prima-energia_dopo>Kgaussian*random.nextGaussian() ) {
+            scambio=true;
+          } else {
+            graph.node(indice_j).setPosition(graph.node(indice_i).getPosition());
+            graph.node(indice_i).setPosition(posizione_scambio);
+          }
+        }
+        interfaccia.messaggi.append("\n"+energia_prima);
+        interfaccia.label_Energia.setText(""+energia_prima);
+      }
+    }
+  }//end boolean swapEffect(Graph graph)
+
+
+  void minimizza_a_pennellate(Graph graph) {
+    interfaccia.messaggi.append("\n");
+    long E= energy(graph);
+    long newE;
+    int startPoint = 0;
+    while (pennellare) {
+      String stringE = ""+E;
+      interfaccia.messaggi.append("\n"+stringE);
+      interfaccia.label_Energia.setText(stringE);
+      for (int i=startPoint; i<graph.numNodes()-1+startPoint; i++) {
+        graph.swap(graph.node(graph.nodeIndexByPosition(i))
+                  ,graph.node(graph.nodeIndexByPosition(i+1)));
+        newE= energy(graph);
+        if (newE-E>Kgaussian*random.nextGaussian()) {
+          graph.swap(graph.node(graph.nodeIndexByPosition(i))
+                    ,graph.node(graph.nodeIndexByPosition(i+1)));
+          newE=E;
+        }
+        E=newE;
+      }
+      for (int i=startPoint; i>startPoint-graph.numNodes()+1; i--) {
+        graph.swap(graph.node(graph.nodeIndexByPosition(i))
+                  ,graph.node(graph.nodeIndexByPosition(i+1)));
+        newE= energy(graph);
+        if (newE-E>Kgaussian*random.nextGaussian()) {
+          graph.swap(graph.node(graph.nodeIndexByPosition(i))
+                    ,graph.node(graph.nodeIndexByPosition(i+1)));
+          newE=E;
+        }
+        E=newE;
+      }
+    }
+  }
+
+  void minimizza_a_pennellate_fast(Graph graph) {
+    int startPoint = 0;
+    while (pennellare_fast) {
+      for (int i=startPoint; i<graph.numNodes()-1+startPoint; i++) {
+        int indiceSX = graph.nodeIndexByPosition(i);
+        int indiceDX = graph.nodeIndexByPosition(i+1);
+        long deltaForce = force(indiceSX, graph)-force(indiceDX, graph);
+        if (deltaForce>Kgaussian*random.nextGaussian()) {
+          graph.swap(graph.node(indiceSX)
+                    ,graph.node(indiceDX) );
+        }
+      }
+      for (int i=startPoint; i>startPoint-graph.numNodes()+1; i--) {
+        int indiceSX = graph.nodeIndexByPosition(i);
+        int indiceDX = graph.nodeIndexByPosition(i+1);
+        long deltaForce = force(indiceSX, graph)-force(indiceDX, graph);
+        if (deltaForce>Kgaussian*random.nextGaussian()) {
+          graph.swap(graph.node(indiceSX)
+                    ,graph.node(indiceDX) );
+        }
+      }
+      long E= energy(graph);
+      String stringE =""+E;
+      interfaccia.messaggi.append("\n"+stringE);
+      interfaccia.label_Energia.setText(stringE);
+    }
+  }
+}

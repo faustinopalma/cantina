@@ -1,0 +1,383 @@
+package vendemmia;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import com.borland.jbcl.layout.*;
+import java.io.*;
+
+/**
+ * <p>Title: vendemmia</p>
+ * <p>Description: raccoglie file di testo contenenti l'output dei comandi sh eseguiti sui router cisco</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class interfaccia extends JFrame {
+  //variabili del corpo programma
+  configurazione conf;
+  lotteria lotteria_mia;
+  tokenDispencer dispencer;
+
+  network network= new network();
+  JPanel contentPane;
+  XYLayout xYLayout1 = new XYLayout();
+  Label indirizzoWS_label = new Label();
+  Label passWS_label = new Label();
+  Label userWS_label = new Label();
+  Label fileIndirizzi_label = new Label();
+  Label cartellaOutput_label = new Label();
+  Label passwLogin_label = new Label();
+  Label userLogin_label = new Label();
+  Label passEna_label = new Label();
+  TextArea passLogin = new TextArea();
+  TextArea userLogin = new TextArea();
+  TextArea passEnable = new TextArea();
+  TextField indirizzoWS = new TextField();
+  TextField userWS = new TextField();
+  TextField passwWS = new TextField();
+  TextField fileIndirizzi = new TextField();
+  TextField cartellaOutput = new TextField();
+  Button avviaVendemmiatore = new Button();
+  Button configura = new Button();
+  TextArea onlyPassLogin = new TextArea();
+  TextField textField_Start_Address = new TextField();
+  Button button_discovery = new Button();
+  TextArea textArea_userName_enable = new TextArea();
+  TextArea textArea_userPasswd_enable = new TextArea();
+  Button button_print_discovery = new Button();
+  JButton jButton_add_WS = new JButton();
+  Button button_comandi = new Button();
+  public int contaVendemmiatori=0;
+
+  //Construct the frame
+  public interfaccia() {
+    enableEvents(AWTEvent.WINDOW_EVENT_MASK);
+    try {
+      jbInit();
+    }
+    catch(Exception e) {
+      e.printStackTrace();
+    }
+  }
+  //Component initialization
+  private void jbInit() throws Exception  {
+    //setIconImage(Toolkit.getDefaultToolkit().createImage(interfaccia.class.getResource("[Your Icon]")));
+    contentPane = (JPanel) this.getContentPane();
+    indirizzoWS_label.setText("Indirizzo WS");
+    contentPane.setLayout(xYLayout1);
+    this.setSize(new Dimension(600, 480));
+    this.setTitle("vendemmia (by Faustino Palma CCIE#8959)");
+    passWS_label.setText("Password WS");
+    userWS_label.setText("User WS");
+    fileIndirizzi_label.setText("Nome file indirizzi");
+    cartellaOutput_label.setText("Nome cartella output");
+    passwLogin_label.setText("Lista passw login");
+    userLogin_label.setText("Lista user login");
+    passEna_label.setText("Lista passw enable");
+    avviaVendemmiatore.setEnabled(false);
+    avviaVendemmiatore.setLabel("Vendemmia");
+    avviaVendemmiatore.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        avviaVendemmiatore_actionPerformed(e);
+      }
+    });
+    configura.setLabel("Configura");
+    configura.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        configura_actionPerformed(e);
+      }
+    });
+    indirizzoWS.setText("127.0.0.1");
+    userWS.setText("faustino");
+    passwWS.setText("grappa");
+    fileIndirizzi.setText("C:\\Analisi\\test\\indirizzi.txt");
+    cartellaOutput.setText("C:\\Analisi\\test");
+    cartellaOutput.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        cartellaOutput_actionPerformed(e);
+      }
+    });
+    userLogin.setText("palma");
+    passLogin.setText("faustino");
+    onlyPassLogin.setText("cisco");
+    passEnable.setText("cisco");
+    textField_Start_Address.setText("primo indirizzo");
+    button_discovery.setEnabled(false);
+    button_discovery.setLabel("Discovery");
+    button_discovery.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button_discovery_actionPerformed(e);
+      }
+    });
+    textArea_userName_enable.setText("palma");
+    textArea_userPasswd_enable.setText("faustino");
+    button_print_discovery.setLabel("Print");
+    button_print_discovery.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button_print_discovery_actionPerformed(e);
+      }
+    });
+    jButton_add_WS.setEnabled(false);
+    jButton_add_WS.setText("Add WS");
+    jButton_add_WS.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        jButton_add_WS_actionPerformed(e);
+      }
+    });
+    button_comandi.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button_comandi_actionPerformed(e);
+      }
+    });
+    button_comandi.setEnabled(false);
+    button_comandi.setLabel("Comandi");
+    contentPane.add(fileIndirizzi,                   new XYConstraints(130, 100, 241, -1));
+    contentPane.add(cartellaOutput,          new XYConstraints(130, 130, 241, 20));
+    contentPane.add(passwWS,       new XYConstraints(130, 70, 126, 20));
+    contentPane.add(userWS,       new XYConstraints(130, 45, 126, -1));
+    contentPane.add(indirizzoWS,         new XYConstraints(130, 20, 126, 20));
+    contentPane.add(avviaVendemmiatore,                   new XYConstraints(480, 20, 90, 65));
+    contentPane.add(userLogin,       new XYConstraints(25, 200, 120, 110));
+    contentPane.add(passLogin,              new XYConstraints(155, 200, 120, 110));
+    contentPane.add(passWS_label, new XYConstraints(46, 70, 83, 20));
+    contentPane.add(cartellaOutput_label,  new XYConstraints(11, 130, 116, 20));
+    contentPane.add(fileIndirizzi_label, new XYConstraints(30, 100, 98, 20));
+    contentPane.add(userWS_label, new XYConstraints(75, 45, 54, 20));
+    contentPane.add(indirizzoWS_label, new XYConstraints(58, 20, 72, 20));
+    contentPane.add(passwLogin_label,     new XYConstraints(155, 175, 120, 20));
+    contentPane.add(userLogin_label,     new XYConstraints(25, 175, 120, 20));
+    contentPane.add(onlyPassLogin,        new XYConstraints(155, 320, 120, 110));
+    contentPane.add(passEna_label,  new XYConstraints(450, 175, 120, 20));
+    contentPane.add(textArea_userName_enable,             new XYConstraints(320, 200, 120, 110));
+    contentPane.add(passEnable,  new XYConstraints(450, 320, 120, 110));
+    contentPane.add(textArea_userPasswd_enable,  new XYConstraints(450, 200, 120, 110));
+    contentPane.add(textField_Start_Address,    new XYConstraints(380, 100, 90, 20));
+    contentPane.add(button_discovery,                 new XYConstraints(480, 100, 90, 20));
+    contentPane.add(button_print_discovery,   new XYConstraints(480, 130, 90, 20));
+    contentPane.add(button_comandi,     new XYConstraints(380, 130, 90, 20));
+    contentPane.add(configura,   new XYConstraints(280, 20, 90, 65));
+    contentPane.add(jButton_add_WS,   new XYConstraints(380, 20, 90, 65));
+  }
+  //Overridden so we can exit when window is closed
+  protected void processWindowEvent(WindowEvent e) {
+    super.processWindowEvent(e);
+    if (e.getID() == WindowEvent.WINDOW_CLOSING) {
+      System.exit(0);
+    }
+  }
+
+  void avviaVendemmiatore_actionPerformed(ActionEvent e) {
+    button_discovery.setEnabled(false);
+    button_print_discovery.setEnabled(false);
+    boolean packFrame = false;
+    contaVendemmiatori++;
+    frameVendemmiatore frame = new frameVendemmiatore(lotteria_mia, conf, contaVendemmiatori);
+    //Validate frames that have preset sizes
+    //Pack frames that have useful preferred size info, e.g. from their layout
+    if (packFrame) {
+      frame.pack();
+    }
+    else {
+      frame.validate();
+    }
+    //Center the window
+    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    Dimension frameSize = frame.getSize();
+    if (frameSize.height > screenSize.height) {
+      frameSize.height = screenSize.height;
+    }
+    if (frameSize.width > screenSize.width) {
+      frameSize.width = screenSize.width;
+    }
+    frame.setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
+    frame.setVisible(true);
+  }
+
+
+  void cartellaOutput_actionPerformed(ActionEvent e) {
+
+  }
+
+
+  //----------------------------------------------------------------------------
+  public class printer  implements Runnable{
+    public printer() {
+      Thread thread = new Thread(this);
+      thread.start();
+    }
+    public void run() {
+      network.print(conf.fileIndirizzi);
+    }
+  }
+
+  void configura_actionPerformed(ActionEvent e) {
+    configura.setEnabled(false);
+
+    distillatore distillaUserLogin = new distillatore(userLogin.getText());
+    distillatore distillaPassLogin = new distillatore(passLogin.getText());
+    distillatore distillaPassEnable = new distillatore(passEnable.getText());
+    distillatore distillaOnlyPassLogin = new distillatore(onlyPassLogin.getText());
+    distillatore distilla_user_name_enable = new distillatore(textArea_userName_enable.getText());
+    distillatore distilla_user_passwd_enable = new distillatore(textArea_userPasswd_enable.getText());
+
+    String[] userLoginVector = distillaUserLogin.separaRighe();
+    String[] passLoginVector = distillaPassLogin.separaRighe();
+    String[] passEnableVector = distillaPassEnable.separaRighe();
+    String[] onlyPassLoginVector = distillaOnlyPassLogin.separaRighe();
+    String[] user_name_enableVector = distilla_user_name_enable.separaRighe();
+    String[] user_passwd_enableVector = distilla_user_passwd_enable.separaRighe();
+
+    int numero_user_name_passwd;
+    if (user_name_enableVector[0].compareTo("")==0) {
+      numero_user_name_passwd=0;
+    } else if (user_name_enableVector.length<user_passwd_enableVector.length) {
+      numero_user_name_passwd = user_name_enableVector.length;
+    } else {
+      numero_user_name_passwd = user_passwd_enableVector.length;
+    }
+
+    int numeroLogin;
+    if (userLoginVector[0].compareTo("")==0) {
+      numeroLogin=0;
+    } else if (userLoginVector.length>passLoginVector.length) {
+      numeroLogin = userLoginVector.length;
+    } else {
+      numeroLogin = passLoginVector.length;
+    }
+    int numeroEnable = passEnableVector.length;
+    int numOnlyPassLogin= onlyPassLoginVector.length;
+    conf = new configurazione(numeroLogin, numeroEnable, numOnlyPassLogin, numero_user_name_passwd);
+    for (int indice=0; indice<numeroLogin; indice++) {
+      if (indice<userLoginVector.length) {
+        conf.utentiParoleLogIN[indice][0] = userLoginVector[indice];
+      } else {
+        conf.utentiParoleLogIN[indice][0] = "";
+      }
+      if (indice<passLoginVector.length) {
+        conf.utentiParoleLogIN[indice][1] = passLoginVector[indice];
+      } else {
+        conf.utentiParoleLogIN[indice][1] = "";
+      }
+    }//end for
+
+    conf.paroleLogIN= onlyPassLoginVector;
+    conf.paroleEnable = passEnableVector;
+    conf.user_name_Enable = user_name_enableVector;
+    conf.user_passwd_Enable = user_passwd_enableVector;
+
+    conf.indirizzoWS = indirizzoWS.getText();
+    conf.userWS = userWS.getText();
+    conf.passwWS = passwWS.getText();
+    conf.fileIndirizzi = fileIndirizzi.getText();
+    conf.directoryBase = cartellaOutput.getText();
+    conf.fileIndirizziVisitati = cartellaOutput.getText() + "\\raccolti.txt";
+    conf.fileIndirizziFalliti = cartellaOutput.getText() + "\\falliti.txt";
+    conf.directoryShRun = cartellaOutput.getText() + "\\sh run";
+    conf.directoryShTech = cartellaOutput.getText() + "\\sh tech";
+    conf.directoryVinaccia = cartellaOutput.getText() + "\\vinaccia";
+    conf.directoryShLogging = cartellaOutput.getText() + "\\sh logging";
+    conf.start_discovery_address = textField_Start_Address.getText();
+    Thread creaCartelle = new Thread(conf, "crea cartelle");
+    creaCartelle.start();
+    lotteria_mia = new lotteria(conf);
+    dispencer= new tokenDispencer(conf);
+    avviaVendemmiatore.setEnabled(true);
+    button_discovery.setEnabled(true);
+    jButton_add_WS.setEnabled(true);
+    button_comandi.setEnabled(true);
+  }
+
+  void button_discovery_actionPerformed(ActionEvent e) {
+    boolean packFrame = false;
+    avviaVendemmiatore.setEnabled(false);
+    frameDiscovery frame = new frameDiscovery(dispencer, conf, network);
+    //Validate frames that have preset sizes
+    //Pack frames that have useful preferred size info, e.g. from their layout
+    if (packFrame) {
+      frame.pack();
+    }
+    else {
+      frame.validate();
+    }
+    //Center the window
+    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    Dimension frameSize = frame.getSize();
+    if (frameSize.height > screenSize.height) {
+      frameSize.height = screenSize.height;
+    }
+    if (frameSize.width > screenSize.width) {
+      frameSize.width = screenSize.width;
+    }
+    frame.setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
+    frame.setVisible(true);
+  }
+
+  void button_print_discovery_actionPerformed(ActionEvent e) {
+    printer printer = new printer();
+  }
+
+  void jButton_add_WS_actionPerformed(ActionEvent e) {
+    boolean packFrame = false;
+    add_WS frame = new add_WS(conf);
+    //Validatbe frames that have preset sizes
+    //Pack frames that have useful preferred size info, e.g. from their layout
+    if (packFrame) {
+      frame.pack();
+    }
+    else {
+      frame.validate();
+    }
+    frame.setSize(300, 150);
+    //Center the window
+    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    Dimension frameSize = frame.getSize();
+    if (frameSize.height > screenSize.height) {
+      frameSize.height = screenSize.height;
+    }
+    if (frameSize.width > screenSize.width) {
+      frameSize.width = screenSize.width;
+    }
+    frame.setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
+    frame.setVisible(true);
+  }
+
+  void button_comandi_actionPerformed(ActionEvent e) {
+    boolean packFrame = false;
+    Dialog_comandi frame = new Dialog_comandi(conf);
+    //Validatbe frames that have preset sizes
+    //Pack frames that have useful preferred size info, e.g. from their layout
+    if (packFrame) {
+      frame.pack();
+    }
+    else {
+      frame.validate();
+    }
+    frame.setSize(400, 400);
+    //Center the window
+    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    Dimension frameSize = frame.getSize();
+    if (frameSize.height > screenSize.height) {
+      frameSize.height = screenSize.height;
+    }
+    if (frameSize.width > screenSize.width) {
+      frameSize.width = screenSize.width;
+    }
+    frame.setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
+    frame.setVisible(true);
+  }
+  //----------------------------------------------------------------------------
+}
+
+class ActionListener implements java.awt.event.ActionListener {
+  interfaccia adaptee;
+
+  ActionListener(interfaccia adaptee) {
+    this.adaptee = adaptee;
+  }
+  public void actionPerformed(ActionEvent e) {
+    adaptee.button_discovery_actionPerformed(e);
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<main type="root" url="root.html" value="Testa">
+    <child type="folder" url="doc.html" value="doc1">
+        <nephew type="document" url="nephew.html" value="nephew"/>
+    </child>
+    <child2 type="folder" url="doc2.html" value="doc2"/>
+</main>

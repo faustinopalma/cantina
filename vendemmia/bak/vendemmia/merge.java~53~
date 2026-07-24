@@ -1,0 +1,704 @@
+package vendemmia;
+import java.io.*;
+import java.util.regex.*;
+import java.util.*;
+
+/*
+ * <p>Title: vendemmia</p>
+ * <p>Description: raccoglie file di testo contenenti l'output dei comandi sh eseguiti sui router cisco</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class merge implements Runnable {
+  token tok;
+  lotteria lotteria_mia;
+  String prompt_router;
+  private class memo {
+    capsulaIndirizzo estratto;
+    int indiceEstratto;
+    int marcaInizioComandi;
+    int marcaInizioComando;
+    int marcaFineComando;
+    int marcaFineShTech;
+    int marcaFineShRun;
+    int marcaFineShLogging;
+    String loginUser;
+    String loginPasswd;
+    String enableUser;
+    String enablePasswd;
+  }
+  memo memo = new memo();
+  public merge(token tok, lotteria lotteria_mia) {
+    this.tok= tok;
+    this.lotteria_mia=lotteria_mia;
+    Thread walker_thread = new Thread(this, "walker");
+    walker_thread.start();
+  }
+
+
+//##############################################################################
+  public void run() {
+    wait_token();
+    while (lotteria_mia.numeroIndirizziRestanti > 0) {
+    //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+      memo.indiceEstratto = lotteria_mia.estraiIndirizzo(tok.board);
+      memo.estratto = ((capsulaIndirizzo) lotteria_mia.vettoreIndirizzi.get(memo.indiceEstratto) );
+      String result= open_telnet(memo.estratto.indirizzo);
+      //telnet_telnet_telnet_telnet_telnet_telnet_telnet_telnet_telnet_telnet_telnet_
+      if (result.compareTo("telnet_successfull")==0) {
+        result= enable();
+        //enabled_enabled_enabled_enabled_enabled_enabled_enabled_enabled_enabled_enabled_
+        if (result.compareTo("enabled")==0) {
+          try {
+            //comandi da eseguire per ogni singolo router
+            memo.marcaInizioComandi = tok.reg.bobina.length();
+            //-----------------terminal lenght 0--------------------------------
+            tok.reg.scrivi("terminal length 0" + "\n");
+            tok.reg.aspettaCaratteriTempo(1, 2000);
+
+            //-----------------sh Tech------------------------------------------
+            comando("sh tech\n");
+            memo.marcaFineShTech = memo.marcaFineComando;
+
+            //-----------------sh Running---------------------------------------
+            comando("sh run\n");
+            memo.marcaFineShRun = memo.marcaFineComando;
+
+            //-----------------sh Logging---------------------------------------
+            comando("sh logging\n");
+            memo.marcaFineShLogging = memo.marcaFineComando;
+
+            //-----------------show cdp neighbors detail------------------------
+            tok.reg.scrivi("show cdp neighbors detail" + "\n");
+            tok.reg.aspettaCaratteriTempo(10, 2000);
+
+            //-----------------show ip eigrp neighb-----------------------------
+            tok.reg.scrivi("show ip eigrp neighb" + "\n");
+            tok.reg.aspettaCaratteriTempo(10, 2000);
+
+            //-----------------show ip ospf neighb------------------------------
+            tok.reg.scrivi("sh ip ospf neighbor" + "\n");
+            tok.reg.aspettaCaratteriTempo(10, 2000);
+
+            //-----------------show frame-relay map-----------------------------
+            tok.reg.scrivi("show frame-relay map" + "\n");
+            tok.reg.aspettaCaratteriTempo(10, 2000);
+
+            //-----------------terminal no length-------------------------------
+            tok.reg.scrivi("terminal no length" + "\n");
+            tok.reg.aspettaCaratteriTempo(1, 2000);
+
+            //uscita dal router ------------------------------------------------
+            quit_telnet();
+            result="success";
+          } catch (IOException e) {
+            tok.board.append("\n" +"Errore IO nell'eseguire i comandi\n");
+          }
+        }
+        //enabled_enabled_enabled_enabled_enabled_enabled_enabled_enabled_enabled_enabled_
+      }
+      //telnet_telnet_telnet_telnet_telnet_telnet_telnet_telnet_telnet_telnet_telnet_
+
+
+
+      if (result.compareTo("unknown_condition")==0)  {
+        tok.board.append("\n<<<<<<----uknown condition error----->>>>>>\n");
+      } else /*not unknown_condition*/ if (result.compareTo("login_passwords_incorrect")==0) {
+        lotteria_mia.rimettiInGioco(memo.indiceEstratto, " login passwd non valida", tok.board);
+        try {
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+        } catch (IOException err) {
+          System.err.println(err);
+        }
+        waitPrompt(10, tok.conf.promptWS);
+      } else if (result.compareTo("enable_passwords_incorrect")==0) {
+        lotteria_mia.rimettiInGioco(memo.indiceEstratto, " enable passwd non valida", tok.board);
+        try {
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("\3");
+          tok.reg.scrivi("quit\n");
+        } catch (IOException err) {
+          System.err.println(err);
+        }
+        waitPrompt(10, tok.conf.promptWS);
+      } else if (result.compareTo("telnet_failed")==0) {
+        lotteria_mia.rimettiInGioco(memo.indiceEstratto, " telnet non riuscito", tok.board);
+      } else if (result.compareTo("success")==0) {
+        stampa();
+      }
+    //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+      tok.reg.riavvolgi();
+    }//end while(lotteria_mia.numeroIndirizziRestanti > 0)
+  }// end public void run()
+//##############################################################################
+
+  private void wait_token() {
+    while (!tok.ready) {
+      try {
+        Thread.currentThread().sleep(100);
+      } catch (InterruptedException err) {
+        System.err.println(err);
+      }
+    }// end while (!tok.ready)
+  }
+
+  private String promptInterpreter(String prompt) {
+    String bobinaCompleta = tok.reg.bobina.toString();
+    distillatore distillaBobinaCompleta = new distillatore(bobinaCompleta );
+    String ultimaRiga = distillaBobinaCompleta.prendiUltimaRiga();
+    Pattern userPattern = Pattern.compile("([Uu][Ss][Ee][Rr])|([Ll][Oo][Gg][Ii][Nn])");
+    Pattern passPattern = Pattern.compile("[Pp][Aa][Ss][Ss]");
+    Matcher userMatcher = userPattern.matcher(ultimaRiga );
+    Matcher passMatcher = passPattern.matcher(ultimaRiga );
+    boolean userBool = userMatcher.find();
+    boolean passBool = passMatcher.find();
+    int lungBobina = tok.reg.bobina.toString().length();
+    boolean promptBool = prompt.compareTo(tok.reg.bobina.toString().
+                  substring(lungBobina-prompt.length(), lungBobina))==0;
+    if (userBool & !passBool ) {
+      return "UserName";
+    }
+    if (passBool ) {
+      return "UserPassword";
+    }
+    if (promptBool ) {
+      return "Prompt";
+    }
+    return "void";
+  } //end private String promptInterpreter()
+
+
+  String waitPrompt(int how_long, String prompt) {
+    boolean go_ahead=false;
+    boolean too_long=false;
+    int times=0;
+    String returnCode="void";
+    while (!go_ahead && !too_long) {
+      returnCode=promptInterpreter(prompt);
+      go_ahead=returnCode.compareTo("void")!=0;
+      if (!go_ahead) {
+        try {
+          Thread.currentThread().sleep(1000);
+        } catch (InterruptedException e) {}
+      }
+      times++;
+      too_long= times>how_long;
+    }//end while (!go_ahead && !too_long)
+    return returnCode;
+  }//end waitPrompt()
+
+
+  String wait_prompt_complete() {
+    String returnCode;
+    int times=0;
+    while (true) {
+      returnCode= waitPrompt(5, tok.conf.promptWS);
+      if (times>6) {
+        return returnCode;
+      } else if (returnCode.compareTo("void")==0) {
+        if (verify_router()) return "prompt_router";
+      } else {
+        return returnCode;
+      }
+      times++;
+    }// end while(true)
+  }//end String wait_prompt_complete()
+
+  String wait_prompt_enabled(String prompt_dis, String prompt_ena) {
+    String returnCode;
+    int times=0;
+    while (true) {
+      returnCode= waitPrompt(3, prompt_dis);
+      if (times>6) {
+        return returnCode;
+      } else if (returnCode.compareTo("void")==0) {
+        returnCode= promptInterpreter(prompt_ena);
+        if (returnCode.compareTo("Prompt")==0) return "enabled";
+      } else {
+        return returnCode;
+      }
+      times++;
+    }// end while(true)
+  }//end String wait_prompt_complete()
+
+  String open_telnet(String address) {
+    int user_pass_tried=0;
+    boolean user_pass_all_tried;
+    int pass_tried=0;
+    boolean pass_all_tried;
+    String next_step="open_telnet";
+    String prompt_responce;
+    while (true) {
+      user_pass_all_tried= !(user_pass_tried<tok.conf.utentiParoleLogIN.length);
+      pass_all_tried= !(pass_tried<tok.conf.paroleLogIN.length);
+      memo.loginUser="";
+      memo.loginPasswd="";
+      //------------------------------------------------------------------------
+      if ( next_step.compareTo("open_telnet")==0 ) {
+        //tok.board.append("\ntelnet<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (user_pass_all_tried && pass_all_tried) return "login_passwords_incorrect";
+        try {
+          tok.reg.scrivi("telnet "+address+"\n");
+        } catch (IOException err) {}
+        tok.reg.aspettaCaratteriTempo(1,1000);
+        prompt_responce= waitPrompt(30, tok.conf.promptWS);
+        if (prompt_responce.compareTo("void")==0) {
+          next_step="handle_void";
+        } else if (prompt_responce.compareTo("UserName")==0) {
+          next_step= "digit_user_name";
+        } else if (prompt_responce.compareTo("UserPassword")==0) {
+          next_step= "digit_password";
+        } else if (prompt_responce.compareTo("Prompt")==0) {
+          return "telnet_failed";
+        }
+      //------------------------------------------------------------------------
+      } else if ( next_step.compareTo("digit_user_name")==0 ) {
+        //tok.board.append("\ndigit_user_name<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (user_pass_all_tried) return "login_passwords_incorrect";
+        try {
+          tok.reg.scrivi(tok.conf.utentiParoleLogIN[user_pass_tried][0]+"\n");
+          memo.loginUser=tok.conf.utentiParoleLogIN[user_pass_tried][0];
+        } catch (IOException err) {}
+        tok.reg.aspettaCaratteriTempo(1,1000);
+        prompt_responce= waitPrompt(30, tok.conf.promptWS);
+        if (prompt_responce.compareTo("void")==0) {
+          next_step="handle_void";
+        } else if (prompt_responce.compareTo("UserName")==0) {
+          next_step= "digit_user_name";
+        } else if (prompt_responce.compareTo("UserPassword")==0) {
+          next_step= "digit_user_passwd";
+        } else if (prompt_responce.compareTo("Prompt")==0) {
+          next_step= "open_telnet";
+        }
+      //------------------------------------------------------------------------
+      } else if ( next_step.compareTo("digit_user_passwd")==0 ) {
+        //tok.board.append("\ndigit_user_passwd<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (user_pass_all_tried) return "login_passwords_incorrect";
+        try {
+          tok.reg.scrivi(tok.conf.utentiParoleLogIN[user_pass_tried][1]+"\n");
+          memo.loginPasswd=tok.conf.utentiParoleLogIN[user_pass_tried][1];
+        } catch (IOException err) {}
+        user_pass_tried++;
+        tok.reg.aspettaCaratteriTempo(1,1000);
+        prompt_responce= wait_prompt_complete();
+        if (prompt_responce.compareTo("void")==0) {
+          next_step="handle_void";
+        } else if (prompt_responce.compareTo("UserName")==0) {
+          next_step= "digit_user_name";
+        } else if (prompt_responce.compareTo("UserPassword")==0) {
+          next_step= "digit_password";
+        } else if (prompt_responce.compareTo("prompt_router")==0) {
+          return "telnet_successfull";
+        } else if (prompt_responce.compareTo("Prompt")==0) {
+          next_step= "open_telnet";
+        }
+      //------------------------------------------------------------------------
+      } else if ( next_step.compareTo("digit_password")==0 ) {
+        //tok.board.append("\ndigit_password<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (pass_all_tried) return "login_passwords_incorrect";
+        try {
+          tok.reg.scrivi(tok.conf.paroleLogIN[pass_tried]+"\n");
+          memo.loginPasswd=tok.conf.paroleLogIN[pass_tried];
+        } catch (IOException err) {}
+        pass_tried++;
+        tok.reg.aspettaCaratteriTempo(1,1000);
+        prompt_responce= wait_prompt_complete();
+        if (prompt_responce.compareTo("void")==0) {
+          next_step="handle_void";
+        } else if (prompt_responce.compareTo("UserName")==0) {
+          next_step= "digit_user_name";
+        } else if (prompt_responce.compareTo("UserPassword")==0) {
+          next_step= "digit_password";
+        } else if (prompt_responce.compareTo("prompt_router")==0) {
+          return "telnet_successfull";
+        } else if (prompt_responce.compareTo("Prompt")==0) {
+          next_step= "open_telnet";
+        }
+      }
+      //------------------------------------------------------------------------
+      if ( next_step.compareTo("void")==0 ) {
+        //tok.board.append("\nvoid<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (verify_router()) return "telnet_successfull";
+        return "unknown_condition";
+      }
+      //------------------------------------------------------------------------
+    }
+  }// end String open_telnet(int address)
+
+  public boolean verify_router() {
+    char prompt_delimiter= tok.reg.bobina.charAt(tok.reg.bobina.length()-1);
+    if (prompt_delimiter!='>' && prompt_delimiter!='#') return false;
+    try {
+      //tok.reg.aspettiamo();//--- questa attesa si può eliminare ---
+      int segnaLibro = tok.reg.bobina.length() -1;
+      if (segnaLibro < 0) {segnaLibro = 0;}
+      tok.reg.visualizza = false;
+      tok.reg.scrivi("?" + "\n");
+      tok.reg.domande.flush();
+      tok.reg.aspettaCaratteriTempo(1,1000);
+      tok.reg.visualizza = true;
+      String aiuto = tok.reg.bobina.substring(segnaLibro);
+      Pattern aiutoPattern = Pattern.compile("Exec commands:");
+      Matcher aiutoMatcher = aiutoPattern.matcher(aiuto);
+      if (aiutoMatcher.find() ) {
+        tok.reg.scrivi("\3");//invio codice ^Z
+        return true;
+      } else {
+        return false;
+      }
+    } catch (IOException e) {
+      tok.board.append("\n" +"Errore IO nel metodo verify_router");
+      return false;
+    }
+  }//end verify_router()
+
+  String enable() {
+    int user_pass_tried=0;
+    boolean user_pass_all_tried;
+    int pass_tried=0;
+    boolean pass_all_tried;
+    String next_step="try_enable";
+    String prompt_responce;
+    prompt_router= tok.leggiPrompt(1000);
+    //tok.board.append("\n ---> Prompt del router: " + prompt_router + "\n");
+    String prompt_router_enabled= prompt_router.substring(0, prompt_router.length()-1)+"#";
+    //tok.board.append("\n ---> Prompt del router: " + prompt_router_enabled + "\n");
+    memo.enableUser="";
+    memo.enablePasswd="";
+    while (true) {
+      user_pass_all_tried= !(user_pass_tried<tok.conf.user_name_Enable.length);
+      pass_all_tried= !(pass_tried<tok.conf.paroleEnable.length);
+      //------------------------------------------------------------------------
+      if ( next_step.compareTo("try_enable")==0 ) {
+        //tok.board.append("\ntelnet<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (user_pass_all_tried && pass_all_tried) return "enable_passwords_incorrect";
+        try {
+          tok.reg.scrivi("enable\n");
+        } catch (IOException err) {}
+        tok.reg.aspettaCaratteriTempo(1,1000);
+        prompt_responce= waitPrompt(30, prompt_router);
+        if (prompt_responce.compareTo("void")==0) {
+          next_step="handle_void";
+        } else if (prompt_responce.compareTo("UserName")==0) {
+          next_step= "digit_user_name";
+        } else if (prompt_responce.compareTo("UserPassword")==0) {
+          next_step= "digit_password";
+        } else if (prompt_responce.compareTo("Prompt")==0) {
+          if (prompt_router.endsWith("#")) return "enabled";
+          return "unknown_enable_error";
+        }
+      //------------------------------------------------------------------------
+      } else if ( next_step.compareTo("digit_user_name")==0 ) {
+        //tok.board.append("\ndigit_user_name<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (user_pass_all_tried) return "enable_passwords_incorrect";
+        try {
+          tok.reg.scrivi(tok.conf.user_name_Enable[user_pass_tried]+"\n");
+          memo.enableUser=tok.conf.user_name_Enable[user_pass_tried];
+        } catch (IOException err) {}
+        tok.reg.aspettaCaratteriTempo(1,1000);
+        prompt_responce= waitPrompt(30, prompt_router);
+        if (prompt_responce.compareTo("void")==0) {
+          next_step="handle_void";
+        } else if (prompt_responce.compareTo("UserName")==0) {
+          next_step= "digit_user_name";
+        } else if (prompt_responce.compareTo("UserPassword")==0) {
+          next_step= "digit_user_passwd";
+        } else if (prompt_responce.compareTo("Prompt")==0) {
+          if (prompt_router.endsWith("#")) return "enabled";
+          return "unknown_enable_error";
+        }
+      //------------------------------------------------------------------------
+      } else if ( next_step.compareTo("digit_user_passwd")==0 ) {
+        //tok.board.append("\ndigit_user_passwd<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (user_pass_all_tried) return "enable_passwords_incorrect";
+        try {
+          tok.reg.scrivi(tok.conf.user_passwd_Enable[user_pass_tried]+"\n");
+          memo.enablePasswd=tok.conf.user_passwd_Enable[user_pass_tried];
+        } catch (IOException err) {}
+        user_pass_tried++;
+        tok.reg.aspettaCaratteriTempo(1,1000);
+        prompt_responce= wait_prompt_enabled(prompt_router, prompt_router_enabled);
+        if (prompt_responce.compareTo("void")==0) {
+          next_step="handle_void";
+        } else if (prompt_responce.compareTo("UserName")==0) {
+          next_step= "digit_user_name";
+        } else if (prompt_responce.compareTo("UserPassword")==0) {
+          next_step= "digit_password";
+        } else if (prompt_responce.compareTo("enabled")==0) {
+          prompt_router=prompt_router_enabled;
+          return "enabled";
+        } else if (prompt_responce.compareTo("Prompt")==0) {
+          next_step= "try_enable";
+        }
+      //------------------------------------------------------------------------
+      } else if ( next_step.compareTo("digit_password")==0 ) {
+        //tok.board.append("\ndigit_password<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        if (pass_all_tried) return "enable_passwords_incorrect";
+        try {
+          tok.reg.scrivi(tok.conf.paroleEnable[pass_tried]+"\n");
+          memo.enablePasswd=tok.conf.paroleEnable[pass_tried];
+        } catch (IOException err) {}
+        pass_tried++;
+        tok.reg.aspettaCaratteriTempo(1,1000);
+        prompt_responce= wait_prompt_enabled(prompt_router, prompt_router_enabled);
+        if (prompt_responce.compareTo("void")==0) {
+          next_step="handle_void";
+        } else if (prompt_responce.compareTo("UserName")==0) {
+          next_step= "digit_user_name";
+        } else if (prompt_responce.compareTo("UserPassword")==0) {
+          next_step= "digit_password";
+        } else if (prompt_responce.compareTo("enabled")==0) {
+          prompt_router= prompt_router_enabled;
+          return "enabled";
+        } else if (prompt_responce.compareTo("Prompt")==0) {
+          next_step= "try_enable";
+        }
+      }
+      //------------------------------------------------------------------------
+      if ( next_step.compareTo("void")==0 ) {
+        //tok.board.append("\nvoid<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+        String returnCode= promptInterpreter(prompt_router_enabled);
+        if (returnCode.compareTo("Prompt")==0) {
+          prompt_router=prompt_router_enabled;
+          return "enabled";
+        }
+        return "unknown_enable_error";
+      }
+      //------------------------------------------------------------------------
+    }
+  }//end String enable()
+
+
+  void quit_telnet() {
+    try {
+      tok.reg.scrivi("quit\n");
+    } catch (IOException err) {}
+    tok.reg.aspettaCaratteriTempo(1, 1000);
+    String prompt_responce= waitPrompt(30, tok.conf.promptWS);
+  }
+
+  private void comando(String comando) throws IOException {
+//---------------- esegue il comando -----------------------------------------
+    tok.board.append("\n"+comando);
+    memo.marcaInizioComando = tok.reg.bobina.length();
+    tok.reg.scrivi(comando + "\n");
+    tok.reg.aspettaCaratteriTempo(3, 2000);
+    String prompt_responce_sh_neigh= waitPrompt(30, prompt_router);
+    memo.marcaFineComando = tok.reg.bobina.length();
+    tok.board.append("    ---> terminato");
+  }
+
+  private void stampa() {
+  //--------------------output sh tech -----------------------------------------
+    tok.reg.aspettiamo();
+    String nomeFileShTech = tok.conf.directoryShTech + "\\sh tech " + memo.estratto.indirizzo + " " + prompt_router.substring(0, prompt_router.length() - 1) + ".txt";
+    String nomeFileShTech2 = tok.conf.directoryShTech + "\\sh tech " + memo.estratto.indirizzo + ".txt";
+    try {
+      boolean nomeFileScorretto = false;
+      BufferedWriter fileShTech = null;
+      try {
+        fileShTech = new BufferedWriter(new FileWriter(nomeFileShTech) );
+      } catch (IOException err) { nomeFileScorretto = true; }
+      if (nomeFileScorretto) {
+        fileShTech = new BufferedWriter(new FileWriter(nomeFileShTech2) );
+      }
+      fileShTech.write("================== inizio intestazione ===================================================");
+      fileShTech.newLine();
+      fileShTech.newLine();
+      try {
+        fileShTech.write("indirizzo di censimento: ");
+        fileShTech.write( ((capsulaIndirizzo) lotteria_mia.vettoreIndirizzi.get(memo.indiceEstratto) ).indirizzo ) ;
+        fileShTech.newLine();
+        fileShTech.write("user: ");
+        fileShTech.write( memo.loginUser );
+        fileShTech.newLine();
+        fileShTech.write("userPassw: ");
+        fileShTech.write( memo.loginPasswd );
+        fileShTech.newLine();
+        fileShTech.write("enableUser: ");
+        fileShTech.write( memo.enableUser );
+        fileShTech.newLine();
+        fileShTech.write("enablePassw: ");
+        fileShTech.write( memo.enablePasswd );
+      } catch (ArrayIndexOutOfBoundsException e)
+          {tok.board.append("\n" +"Errore di \"fuori indice\" nella scrittura dell'intestazione"); }
+      fileShTech.newLine();
+      fileShTech.newLine();
+      fileShTech.write("=================== fine intestazione ====================================================");
+      fileShTech.newLine();
+      fileShTech.newLine();
+      fileShTech.newLine();
+      //output del router >>>>>
+      fileShTech.write(tok.reg.bobina.toString().substring(memo.marcaInizioComandi, memo.marcaFineShTech ) );
+      fileShTech.flush();
+      fileShTech.close();
+    } catch (IOException e) {
+      tok.board.append("\n" +"errore nella scrittura del file sh tech");
+      try {
+        lotteria_mia.scriviFileFalliti.write(memo.estratto.indirizzo + " errore scrittura file" );
+        lotteria_mia.scriviFileFalliti.flush();
+        lotteria_mia.scriviFileFalliti.newLine();
+      } catch (IOException err) {}
+    }
+
+  //--------------------output sh running --------------------------------------
+    tok.reg.aspettiamo();
+    String nomeFileShRun = tok.conf.directoryShRun + "\\sh run " + memo.estratto.indirizzo + " " + prompt_router.substring(0, prompt_router.length() - 1) + ".txt";
+    String nomeFileShRun2 = tok.conf.directoryShRun + "\\sh run " + memo.estratto.indirizzo + ".txt";
+    try {
+      BufferedWriter fileShRun = null;
+      boolean nomeFileScorretto = false;
+      try {
+        fileShRun = new BufferedWriter(new FileWriter(nomeFileShRun) );
+      } catch (IOException err) { nomeFileScorretto = true; }
+      if (nomeFileScorretto) {
+        fileShRun = new BufferedWriter(new FileWriter(nomeFileShRun2) );
+      }
+
+
+      fileShRun.write("================== inizio intestazione ===================================================");
+      fileShRun.newLine();
+      fileShRun.newLine();
+      try {
+        fileShRun.write("indirizzo di censimento: ");
+        fileShRun.write( ((capsulaIndirizzo) lotteria_mia.vettoreIndirizzi.get(memo.indiceEstratto) ).indirizzo ) ;
+        fileShRun.newLine();
+        fileShRun.write("user: ");
+        fileShRun.write( memo.loginUser );
+        fileShRun.newLine();
+        fileShRun.write("userPassw: ");
+        fileShRun.write( memo.loginPasswd );
+        fileShRun.newLine();
+        fileShRun.write("enableUser: ");
+        fileShRun.write( memo.enableUser );
+        fileShRun.newLine();
+        fileShRun.write("enablePassw: ");
+        fileShRun.write( memo.enablePasswd );
+      } catch (ArrayIndexOutOfBoundsException e)
+          {tok.board.append("\n" +"Errore di \"fuori indice\" nella scrittura dell'intestazione"); }
+      fileShRun.newLine();
+      fileShRun.newLine();
+      fileShRun.write("=================== fine intestazione ====================================================");
+      fileShRun.newLine();
+      fileShRun.newLine();
+      fileShRun.newLine();
+      //output del router >>>>>
+      fileShRun.write(tok.reg.bobina.toString().substring(memo.marcaFineShTech, memo.marcaFineShRun ) );
+      fileShRun.flush();
+      fileShRun.close();
+    } catch (IOException e) {tok.board.append("\n" +"errore nella scrittura del file sh run"); }
+
+
+  //--------------------output sh logging --------------------------------------
+    tok.reg.aspettiamo();
+    String nomeFileShLogging = tok.conf.directoryShLogging + "\\sh logging " + memo.estratto.indirizzo + " " + prompt_router.substring(0, prompt_router.length() - 1) + ".txt";
+    String nomeFileShLogging2 = tok.conf.directoryShLogging + "\\sh logging " + memo.estratto.indirizzo + ".txt";
+    try {
+      BufferedWriter fileShLogging = null;
+      boolean nomeFileScorretto = false;
+      try {
+        fileShLogging = new BufferedWriter(new FileWriter(nomeFileShLogging) );
+      } catch (IOException err) { nomeFileScorretto = true; }
+      if (nomeFileScorretto) {
+        fileShLogging = new BufferedWriter(new FileWriter(nomeFileShLogging2) );
+      }
+
+
+      fileShLogging.write("================== inizio intestazione ===================================================");
+      fileShLogging.newLine();
+      fileShLogging.newLine();
+      try {
+        fileShLogging.write("indirizzo di censimento: ");
+        fileShLogging.write( ((capsulaIndirizzo) lotteria_mia.vettoreIndirizzi.get(memo.indiceEstratto) ).indirizzo ) ;
+        fileShLogging.newLine();
+        fileShLogging.write("user: ");
+        fileShLogging.write( memo.loginUser );
+        fileShLogging.newLine();
+        fileShLogging.write("userPassw: ");
+        fileShLogging.write( memo.loginPasswd );
+        fileShLogging.newLine();
+        fileShLogging.write("enableUser: ");
+        fileShLogging.write( memo.enableUser );
+        fileShLogging.newLine();
+        fileShLogging.write("enablePassw: ");
+        fileShLogging.write( memo.enablePasswd );
+      } catch (ArrayIndexOutOfBoundsException e)
+          {tok.board.append("\n" +"Errore di \"fuori indice\" nella scrittura dell'intestazione"); }
+      fileShLogging.newLine();
+      fileShLogging.newLine();
+      fileShLogging.write("=================== fine intestazione ====================================================");
+      fileShLogging.newLine();
+      fileShLogging.newLine();
+      fileShLogging.newLine();
+      //output del router >>>>>
+      fileShLogging.write(tok.reg.bobina.toString().substring(memo.marcaFineShRun, memo.marcaFineShLogging ) );
+      fileShLogging.flush();
+      fileShLogging.close();
+    } catch (IOException e) {tok.board.append("\n" +"errore nella scrittura del file sh logging"); }
+
+
+
+  //--------------------output vinaccia ----------------------------------------
+    tok.reg.aspettiamo();
+    String nomeFileVinaccia = tok.conf.directoryVinaccia + "\\vinaccia" + memo.estratto.indirizzo + " " + prompt_router.substring(0, prompt_router.length() - 1) + ".txt";
+    String nomeFileVinaccia2 = tok.conf.directoryVinaccia + "\\vinaccia" + memo.estratto.indirizzo + ".txt";
+    try {
+      BufferedWriter fileVinaccia = null;
+      boolean nomeFileScorretto = false;
+      try {
+        fileVinaccia = new BufferedWriter(new FileWriter(nomeFileVinaccia) );
+      } catch (IOException err) { nomeFileScorretto = true; }
+      if (nomeFileScorretto) {
+        fileVinaccia = new BufferedWriter(new FileWriter(nomeFileVinaccia2) );
+      }
+      fileVinaccia.write("================== inizio intestazione ===================================================");
+      fileVinaccia.newLine();
+      fileVinaccia.newLine();
+      try {
+        fileVinaccia.write("indirizzo di censimento: ");
+        fileVinaccia.write( ((capsulaIndirizzo) lotteria_mia.vettoreIndirizzi.get(memo.indiceEstratto) ).indirizzo ) ;
+        fileVinaccia.newLine();
+        fileVinaccia.write("user: ");
+        fileVinaccia.write( memo.loginUser );
+        fileVinaccia.newLine();
+        fileVinaccia.write("userPassw: ");
+        fileVinaccia.write( memo.loginPasswd );
+        fileVinaccia.newLine();
+        fileVinaccia.write("enableUser: ");
+        fileVinaccia.write( memo.enableUser );
+        fileVinaccia.newLine();
+        fileVinaccia.write("enablePassw: ");
+        fileVinaccia.write( memo.enablePasswd );
+      } catch (ArrayIndexOutOfBoundsException e)
+          {tok.board.append("\n" +"Errore di \"fuori indice\" nella scrittura dell'intestazione"); }
+      fileVinaccia.newLine();
+      fileVinaccia.newLine();
+      fileVinaccia.write("=================== fine intestazione ====================================================");
+      fileVinaccia.newLine();
+      fileVinaccia.newLine();
+      fileVinaccia.newLine();
+      //output del router >>>>>
+      fileVinaccia.write(tok.reg.bobina.toString().substring(memo.marcaInizioComandi ) );
+      fileVinaccia.flush();
+      fileVinaccia.close();
+    } catch (IOException e) {tok.board.append("\n" +"errore nella scrittura del file vinaccia"); }
+    lotteria_mia.visitatoConSuccesso(memo.indiceEstratto, tok.board);
+  }
+
+}//end public class walker

@@ -1,0 +1,315 @@
+package topology;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import com.borland.jbcl.layout.*;
+
+/**
+ * <p>Title: Topology</p>
+ * <p>Description: Disegna un grafo della rete in formato SVG</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Exeleration</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class interfaccia extends JFrame {
+  String nomeFileTopologiaXML;
+  Graph graph;
+  JPanel contentPane;
+  JMenuBar jMenuBar1 = new JMenuBar();
+  JMenu jMenuFile = new JMenu();
+  JMenuItem jMenuFileExit = new JMenuItem();
+  JMenu jMenuHelp = new JMenu();
+  JMenuItem jMenuHelpAbout = new JMenuItem();
+  XYLayout xYLayout1 = new XYLayout();
+  TextField CampoFileTopologiaXML = new TextField();
+  Label label1 = new Label();
+  Button button_start = new Button();
+  static TextArea messaggi = new TextArea();
+  Button button_bastaPennellate = new Button();
+  engine engine;
+  Button button_bastaSwappare = new Button();
+  static Label label_Energia = new Label();
+  Button button_generaSVG = new Button();
+  TextField scaleR = new TextField();
+  Label label_KappaGaussiana = new Label();
+  Button button_incrementa_K_Gaussiana = new Button();
+  Button button_decrementa_K_Gaussiana = new Button();
+  Button button_iniziaSwap = new Button();
+  Button button_inizia_pennellare = new Button();
+  TextField textField_incremento_K_gaussiana = new TextField();
+
+  //Construct the frame
+  public interfaccia() {
+    enableEvents(AWTEvent.WINDOW_EVENT_MASK);
+    try {
+      jbInit();
+    }
+    catch(Exception e) {
+      e.printStackTrace();
+    }
+  }
+  //Component initialization
+  private void jbInit() throws Exception  {
+    //setIconImage(Toolkit.getDefaultToolkit().createImage(interfaccia.class.getResource("[Your Icon]")));
+    contentPane = (JPanel) this.getContentPane();
+    this.setSize(new Dimension(800, 600));
+    this.setTitle("Topology");
+    jMenuFile.setText("File");
+    jMenuFileExit.setText("Exit");
+    jMenuFileExit.addActionListener(new ActionListener()  {
+      public void actionPerformed(ActionEvent e) {
+        jMenuFileExit_actionPerformed(e);
+      }
+    });
+    jMenuHelp.setText("Help");
+    jMenuHelpAbout.setText("About");
+    jMenuHelpAbout.addActionListener(new ActionListener()  {
+      public void actionPerformed(ActionEvent e) {
+        jMenuHelpAbout_actionPerformed(e);
+      }
+    });
+    contentPane.setLayout(xYLayout1);
+    label1.setText("File XML Topologia:");
+    button_start.setLabel("Start");
+    button_start.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button_start_actionPerformed(e);
+      }
+    });
+    button_start.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_start_mousePressed(e);
+      }
+    });
+    CampoFileTopologiaXML.setText("\\topologiaXML.xml");
+    button_bastaPennellate.setLabel("basta pennellare");
+    button_bastaPennellate.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_bastaPennellate_mousePressed(e);
+      }
+    });
+    button_bastaPennellate.setEnabled(false);
+    button_bastaSwappare.setLabel("basta swappare");
+    button_bastaSwappare.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_bastaSwappare_mousePressed(e);
+      }
+    });
+    button_bastaSwappare.setEnabled(false);
+    label_Energia.setText("ENERGY");
+    button_generaSVG.setLabel("Genera SVG");
+    button_generaSVG.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_generaSVG_mousePressed(e);
+      }
+    });
+    button_generaSVG.setEnabled(false);
+    scaleR.setText("1");
+    button_incrementa_K_Gaussiana.setLabel("su");
+    button_incrementa_K_Gaussiana.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button_incrementa_K_Gaussiana_actionPerformed(e);
+      }
+    });
+    button_incrementa_K_Gaussiana.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_incrementa_K_Gaussiana_mousePressed(e);
+      }
+    });
+    button_decrementa_K_Gaussiana.setLabel("giu");
+    button_decrementa_K_Gaussiana.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_decrementa_K_Gaussiana_mousePressed(e);
+      }
+    });
+    label_KappaGaussiana.setText("0");
+    button_iniziaSwap.setLabel("inizia a swappare");
+    button_iniziaSwap.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button_iniziaSwap_actionPerformed(e);
+      }
+    });
+    button_iniziaSwap.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_iniziaSwap_mousePressed(e);
+      }
+    });
+    button_iniziaSwap.setEnabled(false);
+    button_inizia_pennellare.setLabel("inizia a pennellare");
+    button_inizia_pennellare.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button_inizia_pennellare_mousePressed(e);
+      }
+    });
+    button_inizia_pennellare.setEnabled(false);
+    /*
+    button_.setLabel("giu 50");
+    button_.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button__mousePressed(e);
+      }
+    });*/
+    textField_incremento_K_gaussiana.setText("5");
+    jMenuFile.add(jMenuFileExit);
+    jMenuHelp.add(jMenuHelpAbout);
+    jMenuBar1.add(jMenuFile);
+    jMenuBar1.add(jMenuHelp);
+    contentPane.add(CampoFileTopologiaXML,        new XYConstraints(20, 40, 350, 20));
+    contentPane.add(label1,    new XYConstraints(20, 20, 200, 20));
+    contentPane.add(messaggi,       new XYConstraints(20, 130, 296, 148));
+    contentPane.add(button_start,  new XYConstraints(417, 33, 192, 144));
+    contentPane.add(label_Energia, new XYConstraints(204, 291, 112, 35));
+    contentPane.add(button_decrementa_K_Gaussiana, new XYConstraints(140, 436, 93, 38));
+    contentPane.add(button_incrementa_K_Gaussiana, new XYConstraints(138, 390, 93, 39));
+    contentPane.add(label_KappaGaussiana, new XYConstraints(52, 406, 75, 48));
+    contentPane.add(textField_incremento_K_gaussiana,  new XYConstraints(145, 345, 79, 39));
+    contentPane.add(button_inizia_pennellare, new XYConstraints(494, 210, 136, 48));
+    contentPane.add(button_iniziaSwap, new XYConstraints(641, 211, 130, 45));
+    contentPane.add(button_bastaSwappare, new XYConstraints(642, 263, 130, 45));
+    contentPane.add(button_bastaPennellate, new XYConstraints(496, 264, 134, 50));
+    contentPane.add(button_generaSVG, new XYConstraints(535, 333, 225, 68));
+    contentPane.add(scaleR, new XYConstraints(417, 343, 77, 44));
+    this.setJMenuBar(jMenuBar1);
+  }
+  //File | Exit action performed
+  public void jMenuFileExit_actionPerformed(ActionEvent e) {
+    System.exit(0);
+  }
+  //Help | About action performed
+  public void jMenuHelpAbout_actionPerformed(ActionEvent e) {
+    interfaccia_AboutBox dlg = new interfaccia_AboutBox(this);
+    Dimension dlgSize = dlg.getPreferredSize();
+    Dimension frmSize = getSize();
+    Point loc = getLocation();
+    dlg.setLocation((frmSize.width - dlgSize.width) / 2 + loc.x, (frmSize.height - dlgSize.height) / 2 + loc.y);
+    dlg.setModal(true);
+    dlg.show();
+  }
+  //Overridden so we can exit when window is closed
+  protected void processWindowEvent(WindowEvent e) {
+    super.processWindowEvent(e);
+    if (e.getID() == WindowEvent.WINDOW_CLOSING) {
+      jMenuFileExit_actionPerformed(null);
+    }
+  }
+
+  void button_start_mousePressed(MouseEvent e) {
+    button_start.setEnabled(false);
+    nomeFileTopologiaXML = CampoFileTopologiaXML.getText();
+    graph = new Graph(nomeFileTopologiaXML);
+    engine = new engine(graph);
+    engine.start=true;
+    button_inizia_pennellare.setEnabled(true);
+    button_iniziaSwap.setEnabled(true);
+  }
+
+  void button_bastaPennellate_mousePressed(MouseEvent e) {
+    engine.pennellare=false;
+    button_bastaPennellate.setEnabled(false);
+    button_iniziaSwap.setEnabled(true);
+    button_generaSVG.setEnabled(true);
+    button_inizia_pennellare.setEnabled(true);
+
+  }
+
+  void button_bastaSwappare_mousePressed(MouseEvent e) {
+    engine.swappare=false;
+    button_bastaSwappare.setEnabled(false);
+    button_generaSVG.setEnabled(true);
+    button_inizia_pennellare.setEnabled(true);
+    button_iniziaSwap.setEnabled(true);
+
+  }
+
+  void button_generaSVG_mousePressed(MouseEvent e) {
+    lanciaOutputter outputter = new lanciaOutputter();
+  }
+  public class lanciaOutputter  implements Runnable{
+    public lanciaOutputter() {
+      Thread thread = new Thread(this);
+      thread.start();
+    }
+    public void run() {
+      outputterSVG out = new outputterSVG(engine.graph, nomeFileTopologiaXML.substring(0, nomeFileTopologiaXML.lastIndexOf("\\"))+"\\grezzo.svg");
+      out.drawPolar((new Double(scaleR.getText())).doubleValue() );
+      out.scriviElencoHTML(nomeFileTopologiaXML.substring(0, nomeFileTopologiaXML.lastIndexOf("\\"))+"\\elenco.html");
+    }
+  }
+
+  void button_incrementa_K_Gaussiana_mousePressed(MouseEvent e) {
+    engine.Kgaussian+=(new Double( textField_incremento_K_gaussiana.getText() )).doubleValue();
+    label_KappaGaussiana.setText(""+engine.Kgaussian);
+    label_KappaGaussiana.repaint();
+  }
+
+  void button_decrementa_K_Gaussiana_mousePressed(MouseEvent e) {
+    engine.Kgaussian-=(new Double( textField_incremento_K_gaussiana.getText() )).doubleValue();
+    label_KappaGaussiana.setText(""+engine.Kgaussian);
+    label_KappaGaussiana.repaint();
+  }
+
+  void button_iniziaSwap_mousePressed(MouseEvent e) {
+    engine = new engine(graph);
+    engine.Kgaussian= (new Double(label_KappaGaussiana.getText())).doubleValue();
+    engine.swappare=true;
+    button_bastaSwappare.setEnabled(true);
+    button_iniziaSwap.setEnabled(false);
+    button_generaSVG.setEnabled(false);
+
+    button_inizia_pennellare.setEnabled(false);
+  }
+
+  void button_inizia_pennellare_mousePressed(MouseEvent e) {
+    engine = new engine(graph);
+    engine.Kgaussian= (new Double(label_KappaGaussiana.getText())).doubleValue();
+    button_inizia_pennellare.setEnabled(false);
+    button_bastaPennellate.setEnabled(true);
+    button_iniziaSwap.setEnabled(false);
+
+    engine.pennellare=true;
+    button_generaSVG.setEnabled(false);
+  }
+
+  void button_iniziaSwap_actionPerformed(ActionEvent e) {
+
+  }
+
+  void button_start_actionPerformed(ActionEvent e) {
+
+  }
+
+
+
+  void button_basta_pennellare_fast_mousePressed(MouseEvent e) {
+    engine.pennellare_fast=false;
+
+    button_generaSVG.setEnabled(true);
+    button_inizia_pennellare.setEnabled(true);
+    button_iniziaSwap.setEnabled(true);
+
+  }
+
+
+  void button_incrementa_K_Gaussiana_actionPerformed(ActionEvent e) {
+
+  }
+
+
+  void button__mousePressed(MouseEvent e) {
+
+  }
+
+  void button_inizia_pennellare_fast_mousePressed(MouseEvent e) {
+    engine = new engine(graph);
+    engine.Kgaussian= (new Double(label_KappaGaussiana.getText())).doubleValue();
+    engine.pennellare_fast=true;
+
+    button_iniziaSwap.setEnabled(false);
+    button_generaSVG.setEnabled(false);
+    button_inizia_pennellare.setEnabled(false);
+  }
+
+}

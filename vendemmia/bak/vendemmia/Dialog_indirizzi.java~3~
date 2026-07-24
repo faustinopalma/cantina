@@ -1,0 +1,54 @@
+package vendemmia;
+
+import java.awt.*;
+import javax.swing.*;
+import com.borland.dbswing.*;
+import com.borland.dx.dataset.*;
+
+/**
+ * <p>Title: vendemmia</p>
+ * <p>Description: raccoglie file di testo contenenti l'output dei comandi sh eseguiti sui router cisco</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class Dialog_indirizzi extends JDialog {
+  JPanel panel1 = new JPanel();
+  BorderLayout borderLayout1 = new BorderLayout();
+  JPanel jPanel1 = new JPanel();
+  JdbNavToolBar jdbNavToolBar1 = new JdbNavToolBar();
+  JdbStatusLabel jdbStatusLabel1 = new JdbStatusLabel();
+  TableScrollPane tableScrollPane1 = new TableScrollPane();
+  JdbTable jdbTable1 = new JdbTable();
+  JButton jButton1 = new JButton();
+  TableDataSet tableDataSet1 = new TableDataSet();
+
+  public Dialog_indirizzi(Frame frame, String title, boolean modal) {
+    super(frame, title, modal);
+    try {
+      jbInit();
+      pack();
+    }
+    catch(Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  public Dialog_indirizzi() {
+    this(null, "", false);
+  }
+  private void jbInit() throws Exception {
+    panel1.setLayout(borderLayout1);
+    jdbStatusLabel1.setText("Stato");
+    jButton1.setText("OK");
+    getContentPane().add(panel1);
+    panel1.add(jPanel1, BorderLayout.EAST);
+    jPanel1.add(jButton1, null);
+    panel1.add(jdbNavToolBar1, BorderLayout.NORTH);
+    panel1.add(jdbStatusLabel1, BorderLayout.SOUTH);
+    panel1.add(tableScrollPane1, BorderLayout.CENTER);
+    tableScrollPane1.getViewport().add(jdbTable1, null);
+  }
+}

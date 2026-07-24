@@ -1,0 +1,19 @@
+package vendemmia;
+
+/**
+ * <p>Title: vendemmia</p>
+ * <p>Description: raccoglie file di testo contenenti l'output dei comandi sh eseguiti sui router cisco</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+
+public class neighbor {
+  String next_hop_address=null;
+  long next_hop_address_decimal;
+  String id_name=null;
+  String id_address=null;
+  String telnet_result;
+}

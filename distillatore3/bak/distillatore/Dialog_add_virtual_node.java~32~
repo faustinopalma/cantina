@@ -1,0 +1,88 @@
+package distillatore;
+
+import java.awt.*;
+import javax.swing.*;
+import com.borland.jbcl.layout.*;
+import java.awt.event.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali contenute nei comandi Show dell'IOS</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.1
+ */
+
+public class Dialog_add_virtual_node extends JDialog {
+  rete rete;
+  JPanel panel1 = new JPanel();
+  XYLayout xYLayout1 = new XYLayout();
+  Label label1 = new Label();
+  TextField textField_nome = new TextField();
+  TextField textField_add_network = new TextField();
+  Button button1 = new Button();
+  TextArea textArea1 = new TextArea();
+  Button button_add = new Button();
+
+  public Dialog_add_virtual_node(Frame frame, String title, boolean modal, rete rete) {
+    super(frame, title, modal);
+    try {
+      jbInit();
+      pack();
+    }
+    catch(Exception ex) {
+      ex.printStackTrace();
+    }
+    this.rete = rete;
+  }
+
+  public Dialog_add_virtual_node(rete rete) {
+    this(null, "", false, rete);
+  }
+  void jbInit() throws Exception {
+    panel1.setLayout(xYLayout1);
+    label1.setText("Nome");
+    button1.setLabel("Add network");
+    button1.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mouseReleased(MouseEvent e) {
+        button1_mouseReleased(e);
+      }
+    });
+    button_add.setLabel("Add");
+    button_add.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mouseReleased(MouseEvent e) {
+        button_add_mouseReleased(e);
+      }
+    });
+    getContentPane().add(panel1);
+    panel1.add(label1,     new XYConstraints(20, 20, 40, 20));
+    panel1.add(textField_nome,  new XYConstraints(70, 20, 200, 20));
+    panel1.add(textField_add_network,     new XYConstraints(70, 70, 200, 20));
+    panel1.add(button1,      new XYConstraints(280, 70, 110, 20));
+    panel1.add(textArea1,      new XYConstraints(70, 110, 200, 100));
+    panel1.add(button_add,       new XYConstraints(280, 110, 110, 100));
+  }
+
+  void button_add_mouseReleased(MouseEvent e) {
+    rete.numeroVirtualnode++;
+    nodo virtualnode = new nodo("virtuale_"+rete.numeroVirtualnode, Frame1.messaggi);
+    distillatore distilla_input = new distillatore(textArea1.getText(), Frame1.messaggi);
+    String[] addresses=  distilla_input.trovaPrendiRegularExp("[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}");
+    for (int i=0; i< addresses.length/2; i++) {
+      virtualnode.aggiungiCollegamento("Network_"+i, addresses[2*i], addresses[2*i+1]);
+      collegamentoIP collegamento = virtualnode.collegamento(virtualnode.collegamenti.size()-1);
+      collegamento.tipoLink= "Virt"
+      collegamento.encapsulation = "";
+      collegamento.bandwidth = "";
+      collegamento.shutdown = "";
+    }
+    rete.aggiungiNodo(virtualnode);
+    dispose();
+  }
+
+  void button1_mouseReleased(MouseEvent e) {
+    if (textArea1.getText().compareTo("")!=0) textArea1.append("\n");
+    textArea1.append(textField_add_network.getText());
+  }
+}

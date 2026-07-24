@@ -1,0 +1,40 @@
+package vendemmia;
+
+import java.awt.*;
+import javax.swing.*;
+
+/**
+ * <p>Title: vendemmia</p>
+ * <p>Description: raccoglie file di testo contenenti l'output dei comandi sh eseguiti sui router cisco</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class Dialog_indirizzi extends JDialog {
+  JPanel panel1 = new JPanel();
+  BorderLayout borderLayout1 = new BorderLayout();
+  JTable jTable1 = new JTable();
+
+  public Dialog_indirizzi(Frame frame, String title, boolean modal) {
+    super(frame, title, modal);
+    try {
+      jbInit();
+      pack();
+    }
+    catch(Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  public Dialog_indirizzi() {
+    this(null, "", false);
+  }
+  private void jbInit() throws Exception {
+    panel1.setLayout(borderLayout1);
+    jTable1.setMaximumSize(new Dimension(4, 7));
+    getContentPane().add(panel1);
+    panel1.add(jTable1, BorderLayout.CENTER);
+  }
+}

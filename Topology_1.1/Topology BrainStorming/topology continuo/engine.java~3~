@@ -1,0 +1,40 @@
+package topology;
+import java.io.*;
+import org.w3c.dom.*;
+import javax.xml.parsers.*;
+import javax.xml.transform.dom.*;
+import javax.xml.transform.stream.*;
+
+/**
+ * <p>Title: Topology</p>
+ * <p>Description: Disegna un grafo della rete in formato SVG</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Exeleration</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class engine implements Runnable {
+  Thread thread;
+  String nomeFileTopologiaXML;
+  Document topologiaXML;
+  public engine(String nomeFileTopologiaXML) {
+    this.nomeFileTopologiaXML = nomeFileTopologiaXML;
+    thread = new Thread(this);
+    thread.start();
+  }
+  public void run() {
+    try {
+      DocumentBuilderFactory fabbricaCostruttoriDocumenti = DocumentBuilderFactory.newInstance();
+      DocumentBuilder costruttoreDocumenti = fabbricaCostruttoriDocumenti.newDocumentBuilder();
+      topologiaXML = costruttoreDocumenti.parse(nomeFileTopologiaXML);
+    } catch (Exception err) {
+      interfaccia.messaggi.append("Errore nell'apertura del file XML topologia");
+    }
+    Element element = topologiaXML.getElementById("Router_1");
+    System.out.println(element);
+    //String attribute = element.getAttribute("name");
+    //interfaccia.messaggi.append(attribute);
+
+  }
+}

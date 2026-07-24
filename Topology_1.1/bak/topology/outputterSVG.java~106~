@@ -1,0 +1,242 @@
+package topology;
+import java.io.*;
+import org.w3c.dom.*;
+import javax.xml.parsers.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.*;
+import javax.xml.transform.stream.*;
+
+/**
+ * <p>Title: Topology</p>
+ * <p>Description: Disegna un grafo della rete in formato SVG</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Exeleration</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class outputterSVG {
+  String SVGfileName;
+  Graph graph;
+  public outputterSVG(Graph graph, String SVGfileName) {
+    this.SVGfileName=SVGfileName;
+    this.graph=graph;
+  }
+
+  public void drawGrezzo() {
+    Document SVGdoc=null;
+    try {
+      DocumentBuilderFactory fabbrica = DocumentBuilderFactory.newInstance();
+      DocumentBuilder costruttore = fabbrica.newDocumentBuilder();
+      SVGdoc = costruttore.newDocument();
+    } catch (ParserConfigurationException err) {}
+    //Inizio xml per Svg
+    //==========================================================================
+    double scaleX=50;
+    double scaleY=0.03;
+    int raggio=10;
+    Element radice = SVGdoc.createElement("svg");
+    long width = graph.numNodes()*((long)scaleX);
+    if (width<1000) width=1000;
+    radice.setAttribute("width",""+width);
+    radice.setAttribute("height","800");
+    SVGdoc.appendChild(radice);
+    double minC=graph.minCentrality;
+    double maxC=graph.maxCentrality;
+    for (int i=0; i<graph.numLinks(); i++) {
+      int s=graph.link(i).source;
+      int t=graph.link(i).target;
+      int ps=graph.node(s).getPosition();
+      int pt=graph.node(t).getPosition();
+      double cs=graph.node(s).centrality;
+      double ct=graph.node(t).centrality;
+      Element line = SVGdoc.createElement("line");
+      line.setAttribute("id", "line"+i);
+      double x1=(scaleX*ps+2*raggio);
+      double y1=(scaleY*(cs-minC)+2*raggio);
+      double x2=(scaleX*pt+2*raggio);
+      double y2=(scaleY*(ct-minC)+2*raggio);
+      line.setAttribute("x1", ""+x1);
+      line.setAttribute("y1", ""+y1);
+      line.setAttribute("x2", ""+x2);
+      line.setAttribute("y2", ""+y2);
+      line.setAttribute("style", "stroke:blue;");
+      radice.appendChild(line);
+    }
+
+    for(int i=0;i<graph.numNodes();i++){
+      Element circle=SVGdoc.createElement("circle");
+      double c=graph.node(i).centrality;
+      int p=graph.node(i).getPosition();
+      double cx=(scaleX*p+2*raggio);
+      double cy=(scaleY*(c-minC)+2*raggio);
+      circle.setAttribute("id", ""+graph.node(i).id);
+      circle.setAttribute("cx", ""+cx);
+      circle.setAttribute("cy", ""+cy);
+      circle.setAttribute("r", ""+raggio);
+      radice.appendChild(circle);
+    }
+    //==========================================================================
+    // Fine xml per Svg
+
+    try {
+      TransformerFactory fabbricaTrasformer = TransformerFactory.newInstance();
+      Transformer trasformer = fabbricaTrasformer.newTransformer();
+      DOMSource source = new DOMSource(SVGdoc);
+      StreamResult result = new StreamResult(new FileWriter(SVGfileName));
+      trasformer.transform(source, result);
+    } catch (TransformerConfigurationException err) {}
+      catch (IOException err) {}
+      catch (TransformerException err) {}
+    intesta();
+  }
+
+  void intesta() {
+    StringBuffer testo = new StringBuffer();
+    try {
+      BufferedReader testo_file = new BufferedReader(new FileReader(SVGfileName));
+      boolean uscita = false;
+      while (!uscita) {
+        String riga = testo_file.readLine();
+        if (riga == null) {
+          uscita = true;
+        } else {
+          testo.append(riga + "\n");
+        }
+      }
+    testo_file.close();
+    } catch (IOException e) {
+      interfaccia.messaggi.append("\n" +"Classe apriSepara, Metodo apriSepara: Errore di IO");
+    }
+  String intestazione=
+      "<?xml version=\"1.0\" standalone=\"no\"?>"+
+      "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\""+"\n"+
+      "\"http://www.w3.org/TR/2001/REC-SVG-20020904/DTD/svg10.dtd\">";
+    int posizioneDTD = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>".length();
+    String SVGcompleto = testo.substring(posizioneDTD).toString();
+    testo.delete(0,posizioneDTD);
+    SVGcompleto = testo.insert(0, intestazione).toString();
+    try {
+      BufferedWriter scriviFileXML_DTD = new BufferedWriter(new FileWriter(SVGfileName) );
+      scriviFileXML_DTD.write(SVGcompleto);
+      scriviFileXML_DTD.close();
+    } catch (IOException err) {}
+  }
+
+  public void scriviElencoHTML(String nomeFile) {
+    try {
+      BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile));
+      uscita.write("<html>");
+      uscita.newLine();
+      uscita.write("<head><TITLE>Network Analysis (by Faustino Palma CCIE#8959)</TITLE></head>");
+      uscita.newLine();
+      uscita.write("<body>");
+      uscita.newLine();
+      uscita.write("<table border=\"0\">");
+      uscita.newLine();
+      uscita.write("<tr><td>Riferimento</td><td>Distanza media</td></tr>");
+      uscita.newLine();
+      graph.classifyCentrality();
+      for (int indice=0; indice<graph.numNodes(); indice++) {
+        if (!(graph.mostCentral(indice).riferimento.indexOf("Network")!=-1)) {
+          uscita.write("<tr><td><a href=\""+graph.mostCentral(indice).riferimento+"\">"
+                      +graph.mostCentral(indice).name+"</a></td><td>"
+                      +graph.mostCentral(indice).centrality+"</td></tr>");
+          uscita.newLine();
+        }
+      }
+      uscita.write("</table>");
+      uscita.newLine();
+      uscita.write("</body>");
+      uscita.newLine();
+      uscita.write("</html>");
+      uscita.close();
+    } catch (IOException e) {interfaccia.messaggi.append("\n" +"errore in scriviElencoHTML");}
+  }
+
+  public void drawPolar(double scaleR) {
+    Document SVGdoc=null;
+    try {
+      DocumentBuilderFactory fabbrica = DocumentBuilderFactory.newInstance();
+      DocumentBuilder costruttore = fabbrica.newDocumentBuilder();
+      SVGdoc = costruttore.newDocument();
+    } catch (ParserConfigurationException err) {}
+    //Inizio xml per Svg
+    //==========================================================================
+    int raggio=10;
+    double circleLenght=graph.numNodes();
+    Element radice = SVGdoc.createElement("svg");
+    long dimensionePagina = (new Double(graph.scale_R*graph.maxCentrality)).longValue();
+    radice.setAttribute("width", "100%");
+    radice.setAttribute("height", "100%");
+//    radice.setAttribute("viewBox", "-50% -50% 0 0");
+//    radice.setAttribute("width", ""+(2*dimensionePagina));
+//    radice.setAttribute("height", ""+(2*dimensionePagina));
+//    radice.setAttribute("viewBox", ""+(-dimensionePagina)+" "+(-dimensionePagina)+" "+(2*dimensionePagina)+" "+(2*dimensionePagina) );
+    SVGdoc.appendChild(radice);
+    double minC=graph.minCentrality;
+    double maxC=graph.maxCentrality;
+    for (int i=0; i<graph.numLinks(); i++) {
+      int s=graph.link(i).source;
+      int t=graph.link(i).target;
+      int ps=graph.node(s).getPosition();
+      int pt=graph.node(t).getPosition();
+      double cs=graph.node(s).centrality;
+      double ct=graph.node(t).centrality;
+      Element line = SVGdoc.createElement("line");
+      line.setAttribute("id", "line"+i);
+      double angleS=2*Math.PI*ps/circleLenght;
+      double angleT=2*Math.PI*pt/circleLenght;
+      double x1=scaleR*cs*Math.sin(angleS);
+      double y1=scaleR*cs*Math.cos(angleS);
+      double x2=scaleR*ct*Math.sin(angleT);
+      double y2=scaleR*ct*Math.cos(angleT);
+      line.setAttribute("x1", ""+x1);
+      line.setAttribute("y1", ""+y1);
+      line.setAttribute("x2", ""+x2);
+      line.setAttribute("y2", ""+y2);
+      if (graph.link(i).type.compareTo("Dia")*graph.link(i).type.compareTo("BRI")==0) {
+        line.setAttribute("style", "stroke:yellow;");
+      } else {
+        line.setAttribute("style", "stroke:blue;");
+      }
+      radice.appendChild(line);
+    }
+
+    for(int i=0;i<graph.numNodes();i++){
+      Element a=SVGdoc.createElement("a");
+      a.setAttribute("xlink:href", graph.node(i).riferimento);
+      radice.appendChild(a);
+      Element circle=SVGdoc.createElement("circle");
+      double c=graph.node(i).centrality;
+      int p=graph.node(i).getPosition();
+      double angle=2*Math.PI*p/circleLenght;
+      double cx=scaleR*c*Math.sin(angle);
+      double cy=scaleR*c*Math.cos(angle);
+      circle.setAttribute("id", ""+graph.node(i).id);
+      circle.setAttribute("cx", ""+cx);
+      circle.setAttribute("cy", ""+cy);
+      circle.setAttribute("r", ""+raggio);
+      if (graph.node(i).XMLidentification.indexOf("Network")!=-1) {
+        circle.setAttribute("fill", "green");
+      }
+      a.appendChild(circle);
+    }
+    //==========================================================================
+    // Fine xml per Svg
+
+    try {
+      TransformerFactory fabbricaTrasformer = TransformerFactory.newInstance();
+      Transformer trasformer = fabbricaTrasformer.newTransformer();
+      DOMSource source = new DOMSource(SVGdoc);
+      StreamResult result = new StreamResult(new FileWriter(SVGfileName));
+      trasformer.transform(source, result);
+    } catch (TransformerConfigurationException err) {}
+      catch (IOException err) {}
+      catch (TransformerException err) {}
+    intesta();
+  }
+
+
+
+}

@@ -1,0 +1,145 @@
+package distillatore;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import com.borland.jbcl.layout.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali contenute nei comandi Show dell'IOS</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.1
+ */
+
+public class Frame1 extends JFrame {
+  configurazione conf = new configurazione();
+  JPanel contentPane;
+  XYLayout xYLayout1 = new XYLayout();
+  TextArea messaggi = new TextArea();
+  TextField textField1 = new TextField();
+  Button button1 = new Button();
+  Label label1 = new Label();
+  Button button2 = new Button();
+
+  //Construct the frame
+  public Frame1() {
+    enableEvents(AWTEvent.WINDOW_EVENT_MASK);
+    try {
+      jbInit();
+    }
+    catch(Exception e) {
+      e.printStackTrace();
+    }
+  }
+  //Component initialization
+  private void jbInit() throws Exception  {
+    //setIconImage(Toolkit.getDefaultToolkit().createImage(Frame1.class.getResource("[Your Icon]")));
+    contentPane = (JPanel) this.getContentPane();
+    contentPane.setLayout(xYLayout1);
+    this.setSize(new Dimension(805, 605));
+    this.setTitle("Distillatore");
+    textField1.setText("C:\\Analisi\\AnalisiCarige");
+    textField1.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        textField1_actionPerformed(e);
+      }
+    });
+    button1.setLabel("Distilla");
+    button1.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button1_mousePressed(e);
+      }
+    });
+    button1.addActionListener(new java.awt.event.ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        button1_actionPerformed(e);
+      }
+    });
+    label1.setText("cartella radice");
+    button2.setLabel("Info");
+    button2.addMouseListener(new java.awt.event.MouseAdapter() {
+      public void mousePressed(MouseEvent e) {
+        button2_mousePressed(e);
+      }
+    });
+    contentPane.add(messaggi,                       new XYConstraints(20, 60, 760, 500));
+    contentPane.add(textField1,              new XYConstraints(120, 20, 460, 20));
+    contentPane.add(label1,     new XYConstraints(20, 20, 100, 20));
+    contentPane.add(button1,  new XYConstraints(600, 20, 90, 20));
+    contentPane.add(button2,       new XYConstraints(720, 20, 60, 20));
+  }
+  //Overridden so we can exit when window is closed
+  protected void processWindowEvent(WindowEvent e) {
+    super.processWindowEvent(e);
+    if (e.getID() == WindowEvent.WINDOW_CLOSING) {
+      System.exit(0);
+    }
+  }
+
+  void textField1_actionPerformed(ActionEvent e) {
+
+  }
+
+
+  void button1_actionPerformed(ActionEvent e) {
+
+  }
+
+  void button1_mousePressed(MouseEvent e) {
+    button1.setEnabled(false);
+    conf.cartellaVinaccia = textField1.getText() + "\\vinaccia";
+    conf.fileGrappa = textField1.getText() + "\\Grappa.txt";
+    conf.fileConfigurazioni = textField1.getText() + "\\Configurazioni";
+    conf.fileTipi = conf.fileConfigurazioni + "\\Tipi.txt";
+    conf.fileTipiDLSW = conf.fileConfigurazioni + "\\TipiDLSW.txt";
+    conf.filePeerISDN = conf.fileConfigurazioni + "\\PeerISDN.txt";
+    conf.fileStatiche = conf.fileConfigurazioni + "\\Statiche.txt";
+    conf.fileDistribute = conf.fileConfigurazioni + "\\Distribute.txt";
+    conf.fileRedistribute = conf.fileConfigurazioni + "\\Redistribute.txt";
+    conf.fileNTP = conf.fileConfigurazioni + "\\NTP.txt";
+    conf.fileSicurezzaComandiBaseHTML = conf.fileConfigurazioni + "\\comandiBaseSicurezza.html";
+    conf.fileVersioneIOS = conf.fileConfigurazioni + "\\versioneIOS.html";
+    conf.fileAAATacacs = conf.fileConfigurazioni + "\\AAATacacs.html";
+    conf.fileAccessoCON_VTY_AUX = conf.fileConfigurazioni + "\\accessoCON_VTY_AUX.html";
+    conf.fileLogging = conf.fileConfigurazioni + "\\tipoLogging.html";
+    conf.fileConfReg = conf.fileConfigurazioni + "\\tipoConfReg.html";
+    conf.fileVerificaLoopback = conf.fileConfigurazioni + "\\verificaLoopback.html";
+    conf.fileTrap = conf.fileConfigurazioni + "\\snmp trap.html";
+    conf.fileTopologia = textField1.getText() + "\\Topologia";
+    conf.fileGrappaHTML = textField1.getText() + "\\Grappa.html";
+    conf.fileGDL = textField1.getText() + "\\topologia.gdl";
+    conf.fileTopologiaSimpleXML = textField1.getText() + "\\topologiaSimpleXML.xml";
+    conf.fileTopologiaXML = textField1.getText() + "\\topologiaXML.xml";
+    distillaUnoPerUno vai = new distillaUnoPerUno(conf, messaggi);
+  }
+
+  void button2_mousePressed(MouseEvent e) {
+    boolean packFrame = false;
+    Frame1_AboutBox frame = new Frame1_AboutBox(this);
+    //Validate frames that have preset sizes
+    //Pack frames that have useful preferred size info, e.g. from their layout
+    if (packFrame) {
+      frame.pack();
+    }
+    else {
+      frame.validate();
+    }
+    //Center the window
+    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    Dimension frameSize = frame.getSize();
+/*
+    if (frameSize.height > screenSize.height) {
+      frameSize.height = screenSize.height;
+    }
+    if (frameSize.width > screenSize.width) {
+      frameSize.width = screenSize.width;
+    }
+*/
+    frame.setLocation((screenSize.width - frameSize.width) / 2, (screenSize.height - frameSize.height) / 2);
+    frame.setVisible(true);
+  }
+
+}

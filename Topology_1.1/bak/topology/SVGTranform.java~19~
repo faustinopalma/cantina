@@ -1,0 +1,165 @@
+package topology;
+
+import java.io.*;
+import org.w3c.dom.*;
+import javax.xml.parsers.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.*;
+import javax.xml.transform.stream.*;
+
+/**
+ * <p>Title: Topology</p>
+ * <p>Description: Disegna un grafo della rete in formato SVG</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Exeleration</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class SVGTranform implements Runnable {
+  String SVGfileName;
+  double scale;
+
+  public void run() {
+    drawPolar();
+  }
+
+  public SVGTranform(double scale, String SVGfileName) {
+    this.SVGfileName=SVGfileName;
+    this.scale=scale;
+    Thread thread = new Thread(this);
+    thread.start();
+  }
+
+  private void intesta() {
+    StringBuffer testo = new StringBuffer();
+    try {
+      BufferedReader testo_file = new BufferedReader(new FileReader(SVGfileName));
+      boolean uscita = false;
+      while (!uscita) {
+        String riga = testo_file.readLine();
+        if (riga == null) {
+          uscita = true;
+        } else {
+          testo.append(riga + "\n");
+        }
+      }
+    testo_file.close();
+    } catch (IOException e) {
+    }
+  String intestazione=
+      "<?xml version=\"1.0\" standalone=\"no\"?>"+
+      "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\""+"\n"+
+      "\"http://www.w3.org/TR/2001/REC-SVG-20020904/DTD/svg10.dtd\">";
+    int posizioneDTD = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>".length();
+    String SVGcompleto = testo.substring(posizioneDTD).toString();
+    testo.delete(0,posizioneDTD);
+    SVGcompleto = testo.insert(0, intestazione).toString();
+    try {
+      BufferedWriter scriviFileXML_DTD = new BufferedWriter(new FileWriter(SVGfileName) );
+      scriviFileXML_DTD.write(SVGcompleto);
+      scriviFileXML_DTD.close();
+    } catch (IOException err) {}
+  }
+
+  public void drawPolar() {
+
+  //Inizio Correzione File XML in ingresso
+  StringBuffer testo = new StringBuffer();
+    try {
+      BufferedReader testo_file = new BufferedReader(new FileReader(SVGfileName));
+      boolean uscita = false;
+      while (!uscita) {
+        String riga = testo_file.readLine();
+        if (riga == null) {
+          uscita = true;
+        } else {
+          testo.append(riga + "\n");
+        }
+      }
+    testo_file.close();
+    } catch (IOException e) {}
+  String Good="<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+  /*
+  String DTD =
+        "\n<!DOCTYPE Topology ["+
+           "\n<!ELEMENT svg (Nodes, Links)>"+
+           "\n<!ELEMENT Nodes (node*)>"+
+           "\n<!ELEMENT Links (link*)>"+
+           "\n<!ELEMENT node EMPTY>"+
+           "\n<!ATTLIST node id ID #REQUIRED>"+
+           "\n<!ATTLIST node name CDATA #REQUIRED>"+
+           "\n<!ELEMENT link EMPTY>"+
+           "\n<!ATTLIST link source IDREF #REQUIRED>"+
+           "\n<!ATTLIST link target IDREF #REQUIRED>"+
+           "\n<!ATTLIST link distance CDATA #REQUIRED>"+
+           "\n<!ATTLIST link type CDATA #REQUIRED>"+
+        "\n]>";
+  Good+=DTD;*/
+  String intestazione=
+      "<?xml version=\"1.0\" standalone=\"no\"?>"+
+      "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\""+"\n"+
+      "\"http://www.w3.org/TR/2001/REC-SVG-20020904/DTD/svg10.dtd\">";
+    int posizioneDTD = intestazione.length();
+
+    testo.delete(0,posizioneDTD);
+    String SVGcompleto = testo.insert(0, Good).toString();
+    try {
+      BufferedWriter scriviFileXML_DTD = new BufferedWriter(new FileWriter(SVGfileName) );
+      scriviFileXML_DTD.write(SVGcompleto);
+      scriviFileXML_DTD.close();
+    } catch (IOException err) {}
+  //Fine Correzione
+
+  //Inizio Parsing e Cambiamento Scala
+  Document topologiaXML=null;
+    try {
+      DocumentBuilderFactory fabbricaCostruttoriDocumenti = DocumentBuilderFactory.newInstance();
+      DocumentBuilder costruttoreDocumenti = fabbricaCostruttoriDocumenti.newDocumentBuilder();
+      topologiaXML = costruttoreDocumenti.parse(SVGfileName);
+    } catch (Exception err) {}
+
+
+    NodeList lista_linee=topologiaXML.getElementsByTagName("line");
+    for(int k=0;k<lista_linee.getLength();k++){
+    Element nodo_linea= (Element) lista_linee.item(k);
+    double x1=new Double(nodo_linea.getAttribute("x1").toString()).doubleValue()*scale;
+    double x2=new Double(nodo_linea.getAttribute("x2").toString()).doubleValue()*scale;
+    double y1=new Double(nodo_linea.getAttribute("y1").toString()).doubleValue()*scale;
+    double y2=new Double(nodo_linea.getAttribute("y2").toString()).doubleValue()*scale;
+    nodo_linea.setAttribute("x1",new Double(x1).toString());
+    nodo_linea.setAttribute("x2",new Double(x2).toString());
+    nodo_linea.setAttribute("y1",new Double(y1).toString());
+    nodo_linea.setAttribute("y2",new Double(y2).toString());
+    }
+    lista_linee=topologiaXML.getElementsByTagName("circle");
+    for(int k=0;k<lista_linee.getLength();k++){
+    Element nodo_linea= (Element) lista_linee.item(k);
+    double x1=new Double(nodo_linea.getAttribute("cx").toString()).doubleValue()*scale;
+    double x2=new Double(nodo_linea.getAttribute("cy").toString()).doubleValue()*scale;
+
+    nodo_linea.setAttribute("cx",new Double(x1).toString());
+    nodo_linea.setAttribute("cy",new Double(x2).toString());
+
+    }
+
+    // Fine Cambiamento Scala
+
+    //Inizio Scrittura XML Finale
+
+    try {
+      TransformerFactory fabbricaTrasformer = TransformerFactory.newInstance();
+      Transformer trasformer = fabbricaTrasformer.newTransformer();
+      DOMSource source = new DOMSource(topologiaXML);
+      StreamResult result = new StreamResult(new FileWriter(SVGfileName));
+      trasformer.transform(source, result);
+    } catch (TransformerConfigurationException err) {}
+      catch (IOException err) {}
+      catch (TransformerException err) {}
+      intesta();
+
+
+    //Fine XML Finale
+  }
+
+}

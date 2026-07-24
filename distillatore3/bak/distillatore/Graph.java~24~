@@ -1,0 +1,103 @@
+package distillatore;
+import java.util.*;
+import java.io.*;
+import org.w3c.dom.*;
+import javax.xml.parsers.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.*;
+import javax.xml.transform.stream.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali contenute nei comandi Show dell'IOS</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.1
+ */
+
+public class Graph  {
+  private ArrayList Nodes = new ArrayList();
+  int numNodes() {
+    return Nodes.size();
+  }
+  double minCentrality=Double.MAX_VALUE;
+  double maxCentrality=0;
+  private class node {
+    int id;
+    String name;
+    String riferimento;
+    int indice;
+    double centrality;
+    ArrayList Vectors = new ArrayList();
+    public class vector {
+      int nextHop;
+      double distance;
+    }
+    vector vector(int destination) {return (vector) Vectors.get(destination);}
+    void addVector(int nextHop, double distance) {
+      vector vector = new vector();
+      vector.nextHop = nextHop;
+      vector.distance = distance;
+      Vectors.add(vector);
+    }
+  }//end class node
+  node node(int indice) {return (node) Nodes.get(indice);}
+
+  private ArrayList Links = new ArrayList();
+  int numLinks() {
+    return Links.size();
+  }
+  private class link {
+    int source;
+    int target;
+    double distance;
+    String type;
+  }//end class Links
+  void addLink(int source, int target, double distance, String type) {
+    link link = new link();
+    link.source=source;
+    link.target=target;
+    link.distance=distance;
+    link.type=type;
+    Links.add(link);
+  }
+  link link(int indice) {return (link) Links.get(indice);}
+
+  //Costruttore del Graph
+
+
+  private ArrayList mostCentral = new ArrayList();
+  void classifyCentrality() {
+    mostCentral.clear();
+    mostCentral.add(node(0));
+    for (int i=1; i<Nodes.size(); i++) {
+      boolean classificato=false;
+      int indice_inferiore=0;
+      int indice_superiore=mostCentral.size();
+      int indice_medio=(indice_superiore+indice_inferiore)/2;
+      while (!classificato) {
+        if (indice_superiore-indice_inferiore<=1) {
+          if ( node(i).centrality<mostCentral(indice_inferiore).centrality ) {
+            mostCentral.add(indice_inferiore, node(i));
+            classificato=true;
+          } else {
+            mostCentral.add(indice_superiore, node(i));
+            classificato=true;
+          }
+        } else {
+          indice_medio=(indice_superiore+indice_inferiore)/2;
+          if (node(i).centrality<mostCentral(indice_medio).centrality ) {
+            indice_superiore=indice_medio;
+          } else {
+            indice_inferiore=indice_medio;
+          }
+        }
+      }//end while (!classificato)
+    }//end (int i=0; i<Nodes.size(); i++)
+  }
+  node mostCentral(int i) {
+    return (node) mostCentral.get(i);
+  }
+
+}//end class Graph

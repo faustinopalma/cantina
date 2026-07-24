@@ -1,0 +1,63 @@
+package vendemmia;
+import java.util.*;
+import java.awt.*;
+
+/**
+ * <p>Title: vendemmia</p>
+ * <p>Description: raccoglie file di testo contenenti l'output dei comandi sh eseguiti sui router cisco</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class tokenDispencer {
+  configurazione conf;
+  ArrayList tokens = new ArrayList();
+  ArrayList freeTokens = new ArrayList();
+  void addToken(TextArea messaggi, Checkbox checkbox_visualizza) {
+    token new_token = new token(conf, messaggi, checkbox_visualizza, this);
+    tokens.add(new_token);
+    int index=tokens.size()-1;
+    freeTokens.add(new Integer(index));
+    new_token.index=index;
+  }
+
+  void returnToken(token token) {
+    int token_index = token.index;
+    Integer new_integer = new Integer(token_index);
+    freeTokens.add(new_integer);
+  }
+
+  synchronized token takeToken() {
+    if (freeTokens.size()>0) {
+      int index= ((Integer) freeTokens.get(0)).intValue();
+      freeTokens.remove(0);
+      token return_token = (token) tokens.get(index);
+      return return_token;
+    } else {
+      return null;
+    }
+  }
+
+  token takeTokenPatiently() {
+    token return_token;
+    while (true) {
+      return_token=takeToken();
+      if (return_token!=null) {
+        Thread.currentThread().sleep(1000);
+        return return_token;
+      } else {
+        try {
+          Thread.currentThread().sleep(1000);
+        } catch (InterruptedException err) {
+          System.err.println(err);
+        }
+      }
+    }
+  }// end token takeTokenPatiently()
+
+  public tokenDispencer(configurazione conf) {
+    this.conf= conf;
+  }
+}

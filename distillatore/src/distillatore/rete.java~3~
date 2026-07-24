@@ -1,0 +1,368 @@
+package distillatore;
+import java.util.*;
+import java.io.*;
+import java.awt.*;
+
+import org.w3c.dom.*;
+import javax.xml.parsers.*;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.*;
+import javax.xml.transform.stream.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class rete {
+  TextArea messaggi = new TextArea();
+  public ArrayList nodi = new ArrayList();
+  public int numeroNodi = 0;
+  public ArrayList pseudoNodi = new ArrayList();
+  public int numeroPseudoNodi = 0;
+
+  public rete() {
+  }
+
+  public nodo nodo(int indice) {
+    return (nodo) nodi.get(indice);
+  }
+
+  public nodo pseudoNodo(int indice) {
+    return (nodo) pseudoNodi.get(indice);
+  }
+
+  public void aggiungiNodo(nodo nodo) {
+    nodo.identificativo = "Router_"+String.valueOf(numeroNodi+1);
+    for (int i=0; i<nodo.collegamenti.size(); i++) {
+      boolean pseudoNodoPresente = false;
+      for (int j=0; j<numeroPseudoNodi; j++) {
+        boolean corrisponde = nodo.collegamento(i).confrontaCollegamenti( pseudoNodo(j).collegamento(0) )&&
+                              nodo.collegamento(i).verificaMask(pseudoNodo(j).collegamento(0));
+        if (corrisponde) pseudoNodoPresente=true;
+      }
+      if (!pseudoNodoPresente) {
+        nodo newPseudoNodo = new nodo("Network_"+String.valueOf(numeroPseudoNodi+1), messaggi);
+        newPseudoNodo.identificativo = "Network_"+String.valueOf(numeroPseudoNodi+1);
+        newPseudoNodo.aggiungiCollegamento("rete", nodo.collegamento(i).indirizzo(), nodo.collegamento(i).mask());
+        newPseudoNodo.collegamento(0).tipoLink=nodo.collegamento(i).tipoLink;
+        newPseudoNodo.collegamento(0).indirizzo.and(newPseudoNodo.collegamento(0).mask);
+        boolean maggioreTrovato=false;
+        int posizioneInserimento=0;
+        while ( !maggioreTrovato&&(posizioneInserimento<numeroPseudoNodi) ) {
+          collegamentoIP daConfrontare = ((nodo)pseudoNodi.get(posizioneInserimento) ).collegamento(0);
+          maggioreTrovato= newPseudoNodo.collegamento(0).minore(daConfrontare);
+          posizioneInserimento++;
+        }
+//      corregge il nome dello PseudoNodo
+        newPseudoNodo.nome = newPseudoNodo.collegamento(0).indirizzo()+newPseudoNodo.collegamento(0).barraMask();
+        if (maggioreTrovato) {
+          pseudoNodi.add(posizioneInserimento-1, newPseudoNodo);
+        } else {
+          pseudoNodi.add(newPseudoNodo);
+        }
+        numeroPseudoNodi = pseudoNodi.size();
+      }
+    }
+    nodo.indiceNodo = numeroNodi;
+    for (int i=0; i<numeroPseudoNodi; i++) {
+      collegaNodi(nodo, pseudoNodo(i));
+    }
+    nodi.add(nodo);
+    numeroNodi = nodi.size();
+  }
+
+  public void collegaNodi(nodo nodoUno, nodo nodoDue) {
+    for (int i=0; i<nodoUno.collegamenti.size(); i++) {
+      for (int j=0; j<nodoDue.collegamenti.size(); j++) {
+        boolean collegati = nodoUno.collegamento(i).confrontaCollegamenti(nodoDue.collegamento(j));
+        boolean maskDiversa = !nodoUno.collegamento(i).verificaMask(nodoDue.collegamento(j));
+        if (collegati) {
+          nodoUno.collegamento(i).aggiungiVicino(nodoDue.nome, nodoDue.collegamento(j).indirizzo(), nodoDue.identificativo, nodoDue.indiceNodo, j, maskDiversa);
+          nodoDue.collegamento(j).aggiungiVicino(nodoUno.nome, nodoUno.collegamento(i).indirizzo(), nodoUno.identificativo, nodoUno.indiceNodo, i, maskDiversa);
+        }
+      }
+    }
+  }
+
+  public void semplificaCollegamenti() {
+    for (int i=0; i<numeroPseudoNodi; i++) {
+      if (pseudoNodo(i).collegamento(0).numeroVicini==1) {
+        //System.out.println(pseudoNodo(i).inTabella().distendiVerticale());
+        int indiceNodo = pseudoNodo(i).collegamento(0).vicino(0).indiceNodo;
+        int indiceCollegamento = pseudoNodo(i).collegamento(0).vicino(0).indiceCollegamentoNodo;
+        try {
+          nodo(indiceNodo).collegamento(indiceCollegamento).vicini.remove(
+            nodo(indiceNodo).collegamento(indiceCollegamento).vicini.get(0));
+        } catch(IndexOutOfBoundsException err) {}
+      }
+      if (pseudoNodo(i).collegamento(0).numeroVicini==2/* &&
+          pseudoNodo(i).collegamento(0).vicino(0).indiceNodo!=
+          pseudoNodo(i).collegamento(0).vicino(1).indiceNodo*/) {
+        //System.out.println(pseudoNodo(i).inTabella().distendiVerticale());
+        int indiceNodo_a = pseudoNodo(i).collegamento(0).vicino(0).indiceNodo;
+        int indiceCollegamento_a = pseudoNodo(i).collegamento(0).vicino(0).indiceCollegamentoNodo;
+        int indiceNodo_b = pseudoNodo(i).collegamento(0).vicino(1).indiceNodo;
+        int indiceCollegamento_b = pseudoNodo(i).collegamento(0).vicino(1).indiceCollegamentoNodo;
+        try {
+          nodo(indiceNodo_a).collegamento(indiceCollegamento_a).vicini.remove(
+            nodo(indiceNodo_a).collegamento(indiceCollegamento_a).vicini.get(0));
+        } catch(IndexOutOfBoundsException err) {}
+        try {
+          nodo(indiceNodo_b).collegamento(indiceCollegamento_b).vicini.remove(
+            nodo(indiceNodo_b).collegamento(indiceCollegamento_b).vicini.get(0));
+        } catch(IndexOutOfBoundsException err) {}
+
+        if (nodo(indiceNodo_a).collegamento(indiceCollegamento_a).vicini.size()==0 &&
+            nodo(indiceNodo_b).collegamento(indiceCollegamento_b).vicini.size()==0) {
+          //collegaNodi(nodo(indiceNodo_a), nodo(indiceNodo_b));
+
+          boolean maskDiversa = !nodo(indiceNodo_a).collegamento(indiceCollegamento_a)
+                                .verificaMask(nodo(indiceNodo_b).collegamento(indiceCollegamento_b));
+
+          nodo(indiceNodo_a).collegamento(indiceCollegamento_a)
+            .aggiungiVicino(nodo(indiceNodo_b).nome, nodo(indiceNodo_b).collegamento(indiceCollegamento_b).indirizzo(),
+            nodo(indiceNodo_b).identificativo, nodo(indiceNodo_b).indiceNodo, indiceNodo_b, maskDiversa);
+
+          nodo(indiceNodo_b).collegamento(indiceCollegamento_b)
+            .aggiungiVicino(nodo(indiceNodo_a).nome, nodo(indiceNodo_a).collegamento(indiceCollegamento_a).indirizzo(),
+            nodo(indiceNodo_a).identificativo, nodo(indiceNodo_a).indiceNodo, indiceNodo_a, maskDiversa);
+        }
+      }
+    }
+  }
+
+  public void scriviFileSeparati(String nomeFile) {
+    try {
+      BufferedWriter uscitaNetworks = new BufferedWriter(new FileWriter(nomeFile+"\\Network.html"));
+      uscitaNetworks.write("<html><body>");
+      for (int indice=0; indice<numeroNodi; indice++) {
+        nodo nodoAttuale = (nodo)nodi.get(indice);
+        BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile+"\\"+nodoAttuale.identificativo+".html"));
+        uscita.write("<html>");
+        uscita.newLine();
+        uscita.write("<body>");
+        nodoAttuale.uscita = uscita;
+        nodoAttuale.stampaHTML();
+        uscita.write("</body>");
+        uscita.write("</html>");
+        uscita.close();
+      }
+      for (int indice=0; indice<numeroPseudoNodi; indice++) {
+        nodo nodoAttuale = (nodo)pseudoNodi.get(indice);
+        BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile+"\\"+nodoAttuale.identificativo+".html"));
+        uscita.write("<html>");
+        uscita.newLine();
+        uscita.write("<body>");
+        nodoAttuale.uscita = uscita;
+        nodoAttuale.stampaHTML();
+        uscita.write("</body>");
+        uscita.write("</html>");
+        uscita.close();
+        nodoAttuale.uscita = uscitaNetworks;
+        nodoAttuale.stampaHTML();
+        uscitaNetworks.write("<p></p><p></p>");
+      }
+      uscitaNetworks.write("</body></html>");
+      uscitaNetworks.close();
+    } catch (IOException e) {messaggi.append("\n" +"errore in scriviFile");}
+  }
+
+  public void scriviFileXML(String nomeFile) {
+    try {
+      DocumentBuilderFactory fabbricaCostruttori = DocumentBuilderFactory.newInstance();
+      DocumentBuilder costruttoreDocumenti = fabbricaCostruttori.newDocumentBuilder();
+      Document topologiaXML = costruttoreDocumenti.newDocument();
+      Element radice = topologiaXML.createElement("Topology");
+      topologiaXML.appendChild(radice);
+      Element nodes = topologiaXML.createElement("Nodes");
+      nodes.setAttribute("id", "Nodes");
+      radice.appendChild(nodes);
+      Element links = topologiaXML.createElement("Links");
+      links.setAttribute("id", "Links");
+      radice.appendChild(links);
+      for (int indice=0; indice<numeroNodi; indice++) {
+        nodo nodoAttuale = (nodo)nodi.get(indice);
+        Element node = topologiaXML.createElement("node");
+        node.setAttribute("name", nodoAttuale.nome);
+        node.setAttribute("id", nodoAttuale.identificativo);
+        for (int i=0; i<nodoAttuale.collegamenti.size(); i++) {
+          for (int j=0; j<nodoAttuale.collegamento(i).vicini.size(); j++){
+            if (nodoAttuale.identificativo.compareTo(
+                nodoAttuale.collegamento(i).vicino(j).identificativo)>0) {
+              Element link = topologiaXML.createElement("link");
+              link.setAttribute("source", nodoAttuale.identificativo);
+              link.setAttribute("target", nodoAttuale.collegamento(i).vicino(j).identificativo);
+              String tipoLink = nodoAttuale.collegamento(i).tipoLink;
+              link.setAttribute("type", tipoLink);
+              if (tipoLink.indexOf("Fas")!=-1) {
+                link.setAttribute("distance", "100");
+              } else if (tipoLink.indexOf("Eth")!=-1) {
+                link.setAttribute("distance", "100");
+              } else if (tipoLink.indexOf("Tok")!=-1) {
+                link.setAttribute("distance", "100");
+              } else if (tipoLink.indexOf("BRI")!=-1) {
+                link.setAttribute("distance", "1000000");
+              } else if (tipoLink.indexOf("Dia")!=-1) {
+                link.setAttribute("distance", "1000000");
+              } else if (tipoLink.indexOf("Tun")!=-1) {
+                link.setAttribute("distance", "100000000");
+              } else {
+                link.setAttribute("distance", "10000");
+              }
+              //String bandwidth=nodoAttuale.collegamento(i).bandwidth;
+              //long BW = (new Long(bandwidth)).longValue();
+              //Double distance = new Double(10000/BW);
+              //link.setAttribute("distance", distance.toString());
+              links.appendChild(link);
+            }
+          }
+        }
+        nodes.appendChild(node);
+      }
+      for (int indice=0; indice<numeroPseudoNodi; indice++) {
+        nodo nodoAttuale = (nodo)pseudoNodi.get(indice);
+        if (nodoAttuale.collegamento(0).vicini.size()>2) {
+          Element node = topologiaXML.createElement("node");
+          node.setAttribute("name", nodoAttuale.nome);
+          node.setAttribute("id", nodoAttuale.identificativo);
+          nodes.appendChild(node);
+        }
+      }
+      TransformerFactory fabbricaTransformer = TransformerFactory.newInstance();
+      Transformer transformer = fabbricaTransformer.newTransformer();
+      DOMSource source = new DOMSource(topologiaXML);
+      StreamResult result = new StreamResult(new FileWriter(nomeFile));
+      transformer.transform(source, result);
+    } catch (ParserConfigurationException err) {}
+      catch (TransformerConfigurationException err) {}
+      catch (TransformerException err) {}
+      catch (IOException err) {}
+      StringBuffer testo = new StringBuffer();
+      try {
+        BufferedReader testo_file = new BufferedReader(new FileReader(nomeFile));
+        boolean uscita = false;
+        while (!uscita) {
+          String riga = testo_file.readLine();
+          if (riga == null) {
+            uscita = true;
+          } else {
+            testo.append(riga + "\n");
+          }
+        }
+      testo_file.close();
+      } catch (IOException e) {
+        messaggi.append("\n" +"Classe apriSepara, Metodo apriSepara: Errore di IO");
+      }
+      String DTD =
+            "\n<!DOCTYPE Topology ["+
+               "\n<!ELEMENT Topology (Nodes, Links)>"+
+               "\n<!ELEMENT Nodes (node*)>"+
+               "\n<!ELEMENT Links (link*)>"+
+               "\n<!ELEMENT node EMPTY>"+
+               "\n<!ATTLIST node id ID #REQUIRED>"+
+               "\n<!ATTLIST node name CDATA #REQUIRED>"+
+               "\n<!ELEMENT link EMPTY>"+
+               "\n<!ATTLIST link source IDREF #REQUIRED>"+
+               "\n<!ATTLIST link target IDREF #REQUIRED>"+
+               "\n<!ATTLIST link distance CDATA #REQUIRED>"+
+               "\n<!ATTLIST link type CDATA #REQUIRED>"+
+            "\n]>";
+      int posizioneDTD = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>".length();
+      String TopologiaXML_DTD = testo.insert(posizioneDTD, DTD).toString();
+      try {
+        BufferedWriter scriviFileXML_DTD = new BufferedWriter(new FileWriter(nomeFile) );
+        scriviFileXML_DTD.write(TopologiaXML_DTD);
+        scriviFileXML_DTD.close();
+      } catch (IOException err) {}
+  }
+
+  public void scriviFileGDL(String nomeFile) {
+    try {
+      BufferedWriter uscita = new BufferedWriter(new FileWriter(nomeFile));
+      uscita.write("graph: {");
+
+      uscita.newLine();
+      uscita.write("  layoutalgorithm: forcedir");
+      uscita.newLine();
+      uscita.write("  scaling        : maxspect");
+      uscita.newLine();
+      uscita.write("  arrowmode      : free");
+      uscita.newLine();
+      uscita.write("  node.shape     : circle");
+      uscita.newLine();
+      uscita.write("  node.width     : 30");
+      uscita.newLine();
+      uscita.write("  // Parameters for force-directed placement");
+      uscita.newLine();
+      uscita.write("  attraction     : 80    // Attractive force");
+      uscita.newLine();
+      uscita.write("  repulsion      : 800    // Repulsive force");
+      uscita.newLine();
+      uscita.write("  gravity        :  10.0  // Gravitational force (float)");
+      uscita.newLine();
+      uscita.write("  randomrounds   :  0    // Rounds with random impulse");
+      uscita.newLine();
+      uscita.write("  randomimpulse  :  0    // Force of the random impulse");
+      uscita.newLine();
+      uscita.write("  fdmax          : 50    // Number of iterations");
+      uscita.newLine();
+      uscita.write("  tempmax        : 254   // Maximal Temperature");
+      uscita.newLine();
+      uscita.write("  tempmin        :  0    // Minimal Temperature");
+      uscita.newLine();
+      uscita.write("  temptreshold   :  3    // > 0");
+      uscita.newLine();
+      uscita.write("  tempscheme     :  3    // 1 - 8");
+      uscita.newLine();
+      uscita.write("  tempfactor     :  1.08 // > 1 (float)");
+      uscita.newLine();
+      uscita.write("  randomfactor   :100    // 100 means: determ. schedule");
+      uscita.newLine();
+      uscita.write("  magnetic_field1: top_to_bottom");
+      uscita.newLine();
+      uscita.write("  magnetic_field2: no");
+      uscita.newLine();
+      uscita.write("  magnetic_force1: 20");
+      uscita.newLine();
+      uscita.write("  magnetic_force2:  0");
+      uscita.newLine();
+      uscita.write("  // And the border coordinates");
+      uscita.newLine();
+      uscita.write("  border x : 5000");
+      uscita.newLine();
+      uscita.write("  border y : 5000");
+
+      for (int i=0; i<numeroNodi; i++) {
+        uscita.newLine();
+        uscita.write("node: {title:\""+nodo(i).identificativo+"\" "
+                    +"label:\""+nodo(i).nome+"\"}");
+      }
+      for (int i=0; i<numeroPseudoNodi; i++) {
+        if (pseudoNodo(i).collegamento(0).numeroVicini==2) {
+          uscita.newLine();
+          uscita.write("edge: "
+                      +"{source:\""+pseudoNodo(i).collegamento(0).vicino(0).identificativo+"\""
+                      +"target:\""+pseudoNodo(i).collegamento(0).vicino(1).identificativo+"\"}");
+        } else if (pseudoNodo(i).collegamento(0).numeroVicini>2) {
+          uscita.newLine();
+          uscita.write("node: {title:\""+pseudoNodo(i).identificativo+"\" "
+                              +"label:\""+pseudoNodo(i).nome+"\"}");
+          for (int j=0; j<pseudoNodo(i).collegamento(0).numeroVicini; j++) {
+            uscita.newLine();
+            uscita.write("edge: "
+                        +"{source:\""+pseudoNodo(i).identificativo+"\""
+                        +"target:\""+pseudoNodo(i).collegamento(0).vicino(j).identificativo+"\"}");
+          }
+        }
+      }
+      uscita.newLine();
+      uscita.write("}");
+      uscita.close();
+    } catch (IOException e) {messaggi.append("\n" +"errore in scriviFileGDL");}
+  }
+}

@@ -1,0 +1,97 @@
+package vendemmia;
+import java.util.*;
+import java.io.*;
+import java.awt.*;
+
+/**
+ * <p>Title: Aladino</p>
+ * <p>Description: Apre una serie di sessioni telnet verso una lista di indirizzi ed esegue un insieme prestailito di comandi</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class lotteria {
+  ArrayList vettoreIndirizzi = new ArrayList();
+  Random ruota = new Random(System.currentTimeMillis() );
+  BufferedWriter scriviFile;
+  BufferedWriter scriviFileFalliti;
+  int numeroIndirizziRestanti;
+  int numeroMassimoTentativi = 3;
+
+  public lotteria(configurazione conf) {
+    try {
+      BufferedReader leggiFile = new BufferedReader(new FileReader(conf.fileIndirizzi) );
+      scriviFile = new BufferedWriter(new FileWriter(conf.fileIndirizziVisitati) );
+      scriviFileFalliti = new BufferedWriter(new FileWriter(conf.fileIndirizziFalliti) );
+      boolean uscita = false;
+      while (!uscita) {
+        String indirizzoString = leggiFile.readLine();
+        if (indirizzoString == null) {
+          uscita = true;
+        } else {
+          capsulaIndirizzo indirizzo = new capsulaIndirizzo(indirizzoString, 0, true);
+          vettoreIndirizzi.add(indirizzo);
+        }
+      }
+    } catch (FileNotFoundException e) {
+      System.out.println("\n" +"File indirizzi da visitare non trovato");
+    } catch (IOException e) {
+      System.out.println("\n" +"Errore di IO nel file indirizzi da visitare");
+    }
+    numeroIndirizziRestanti = vettoreIndirizzi.size();
+  }// fine del costruttore lotteria
+
+  public synchronized int estraiIndirizzo(TextArea messaggi) {
+    boolean trovato = false;
+    int indice = -1;
+    while (!trovato) {
+      indice = ruota.nextInt(vettoreIndirizzi.size() );
+      trovato = ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).inGioco;
+      if (trovato) {
+        numeroIndirizziRestanti--;
+        messaggi.append("\nPescato indirizzo: ");
+        messaggi.append("\n" + ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).indirizzo );
+        messaggi.append("\nNumero indirizzi restanti: ");
+        messaggi.append("\n" +numeroIndirizziRestanti);
+        ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).inGioco = false;
+      }
+    }
+    return indice;
+  }
+
+  public void rimettiInGioco(int indice, String motivo, TextArea messaggi) {
+    if ( ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).numeroTentativi < numeroMassimoTentativi ) {
+      ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).numeroTentativi++;
+      messaggi.append("\n\nIndirizzo: ");
+      messaggi.append( ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).indirizzo );
+      messaggi.append(" tentato ");
+      messaggi.append( String.valueOf(  ((capsulaIndirizzo) vettoreIndirizzi.get(indice)) .numeroTentativi ) );
+      messaggi.append("\n" +" volte senza successo");
+      ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).inGioco = true;
+      numeroIndirizziRestanti++;
+    } else {
+      ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).inGioco = false;
+      try {
+        scriviFileFalliti.write( ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).indirizzo + motivo );
+        scriviFileFalliti.newLine();
+        scriviFileFalliti.flush();
+      } catch (IOException e) {}
+    }
+  }
+  public void visitatoConSuccesso(int indice, TextArea messaggi) {
+    try {
+      scriviFile.write( ((capsulaIndirizzo) vettoreIndirizzi.get(indice)).indirizzo );
+      scriviFile.newLine();
+      scriviFile.flush();
+      messaggi.append("\nNumero indirizzi restanti: ");
+      messaggi.append("\n" +numeroIndirizziRestanti);
+    } catch (IOException e) {
+//      ((capsulaIndirizzo) vettoreIndirizzi.get(indice) ).inGioco = true;
+//      numeroIndirizziRestanti++;
+      messaggi.append("\n" +"\nErrore IO nella scrittura sul file degli indirizzi visitati \nIndirizzo non registrato: ");
+      messaggi.append("\n" + ((capsulaIndirizzo) vettoreIndirizzi.get(indice)).indirizzo );
+    }
+  }
+}

@@ -1,0 +1,52 @@
+package vendemmia;
+import java.util.*;
+import java.io.*;
+
+/*
+ * <p>Title: vendemmia</p>
+ * <p>Description: raccoglie file di testo contenenti l'output dei comandi sh eseguiti sui router cisco</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class network {
+  public ArrayList routers = new ArrayList();
+  public router router(int i) {return (router) routers.get(i);}
+
+  public long convert_IP2decimal(String IP) {
+    distillatore distilla_IP = new distillatore(IP);
+    String[] decimals = distilla_IP.trovaPrendiRegularExp("[0-9]{1,3}");
+    long decimal = 0;
+    long k=1;
+    for (int i=3; i>=0; i--) {
+      decimal+=(new Integer(decimals[i])).intValue()*k;
+      k=k*256;
+    }
+    return decimal;
+  }
+  public String convert_decimal2IP(long decimal) {
+    long k=256*256*256;
+    long dotted;
+    long decimal_restant= decimal;
+    String dotted_decimal = "";
+    for (int i=3; i>=0; i--) {
+      dotted = decimal_restant/k;
+      decimal_restant-=dotted*k;
+      dotted_decimal+=dotted+".";
+      k=k/256;
+    }
+    dotted_decimal=dotted_decimal.substring(0, dotted_decimal.length()-1);
+    return dotted_decimal;
+  }
+
+  public void print(String file_name) {
+    BufferedWriter addresses_writer = new BufferedWriter(new FileWriter(file_name));
+    for (int i=0; i<routers.size(); i++) {
+      addresses_writer.write(router(i).id_address);
+      addresses_writer.newLine();
+    }
+    addresses_writer.close();
+  }
+}

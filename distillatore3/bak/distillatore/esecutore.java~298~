@@ -1,0 +1,1449 @@
+package distillatore;
+
+import java.util.regex.*;
+import java.util.*;
+import java.awt.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class esecutore {
+  TextArea messaggi = new TextArea();
+  String shRun;
+  String shVer;
+  String shDiag;
+  String shFramePVC;
+  String shController;
+  String shLogging;
+  String intestazione;
+  String[] interfacce;
+  String shInterface;
+  String[] interfacceSh;
+
+  distillatore distillaShRun;
+  distillatore distillaShVer;
+  boolean verificaShDiag;
+  distillatore distillaShDiag;
+  distillatore distillaShController;
+  distillatore distillaIntestazione;
+  distillatore distillaShLogging;
+  distillatore distillaShInterface;
+
+  esecutore(String testoPath, tabella tabellaOutput, TextArea messaggi) {
+    ApriSepara showSeparati = new ApriSepara(testoPath, messaggi);
+    shRun = showSeparati.getIniziaFinisceCon("#sho?w? runn?i?n?g?\\n",
+                                             "\\nend\\n");
+    shLogging = showSeparati.getIniziaFinisceCon("#sh logging", "#show");
+    if (shLogging != null) {
+      distillaShLogging = new distillatore(shLogging, messaggi);
+    }
+    if (shRun == null) {
+      shRun = showSeparati.getIniziaFinisceCon("---- show running-config ----",
+                                               "--- show ");
+    }
+    shVer = showSeparati.getIniziaFinisceCon("--- show version", "--- show ");
+    verificaShDiag = (showSeparati.getTesto().indexOf("--- show diag") != -1);
+    if (verificaShDiag) {
+      shDiag = showSeparati.getIniziaFinisceCon("--- show diag", "--- show ");
+    }
+    shController = showSeparati.getIniziaFinisceCon("--- show controllers",
+        "--- show ");
+    intestazione = showSeparati.getIniziaFinisceCon("= inizio intestazione =",
+        "= fine intestazione =");
+
+    distillaShRun = new distillatore(shRun, messaggi);
+    distillaShVer = new distillatore(shVer, messaggi);
+    if (verificaShDiag) {
+      distillaShDiag = new distillatore(shDiag, messaggi);
+    }
+    distillaShController = new distillatore(shController, messaggi);
+    distillaIntestazione = new distillatore(intestazione, messaggi);
+
+    interfacce = distillaShRun.separaBlocchiRipetuti("\\ninterface", "\\n!\\n");
+    shInterface = showSeparati.getIniziaFinisceCon("--- show interfaces ---",
+        "--- show");
+    distillaShInterface = new distillatore(shInterface, messaggi);
+    interfacceSh = distillaShInterface.separaBlocchiRipetuti(
+        "\n {0,1}[a-zA-Z]+[0-9/\\.:]+");
+  }
+
+  //*******************************************************************************
+   // per ogni campo inserire un metodo come i seguenti
+
+   //sistillaShVer ++++++++++++++++++++++++++++++++++++++++++++++
+
+  public String scriviVersioneIOS() {
+    String rigaVersioneIOS = distillaShVer.trovaPrendiRiga("\nIOS ");
+    distillatore distillaVersioneIOS_2 = new distillatore(rigaVersioneIOS,
+        messaggi);
+    String VersioneIOS_a = distillaVersioneIOS_2.trovaPrendiParola("Version", 2);
+    String VersioneIOS_b = distillaVersioneIOS_2.trovaPrendiParola("Software",
+        2);
+    String VersioneIOS = VersioneIOS_a + " " + VersioneIOS_b;
+    return VersioneIOS;
+  }
+
+  public String scriviVersioneIOS_a() {
+    String rigaVersioneIOS = distillaShVer.trovaPrendiRiga("\nIOS ");
+    distillatore distillaVersioneIOS_2 = new distillatore(rigaVersioneIOS,
+        messaggi);
+    String VersioneIOS_a = distillaVersioneIOS_2.trovaPrendiParola("Version", 2);
+    return VersioneIOS_a;
+  }
+
+  public String scriviVersioneIOS_b() {
+    String rigaVersioneIOS = distillaShVer.trovaPrendiRiga("\nIOS ");
+    distillatore distillaVersioneIOS_2 = new distillatore(rigaVersioneIOS,
+        messaggi);
+    String VersioneIOS_b = distillaVersioneIOS_2.trovaPrendiParola("Software",
+        2);
+    return VersioneIOS_b;
+  }
+
+  public String scriviVersioneIOS_c() {
+    String rigaVersioneIOS = distillaShVer.trovaPrendiRiga("\nIOS ");
+    distillatore distillaVersioneIOS_2 = new distillatore(rigaVersioneIOS,
+        messaggi);
+    String VersioneIOS_b = distillaVersioneIOS_2.trovaPrendiParola(
+        "RELEASE SOFTWARE", 2);
+    return VersioneIOS_b;
+  }
+
+//  public String scriviFileIOS() {
+//    String FileIOS = distillaShVer.trovaPrendiParola("System image file is", 3);
+//    return FileIOS;
+//  }
+  public String scriviFileIOS() {
+    String FileIOS = distillaShVer.trovaPrendiParola("System image file is", 3);
+    FileIOS = FileIOS.replace('"', ' ');
+    FileIOS = FileIOS.replaceFirst("flash:", "");
+    return FileIOS;
+  }
+
+  public String scriviModelloRouter() {
+    String rigaModelloRouter = distillaShVer.trovaPrendiRigaTutta(
+        "cisco.{0,100}processor");
+    distillatore distillaModelloRouter_2 = new distillatore(rigaModelloRouter,
+        messaggi);
+    String ModelloRouter = "Cisco" +
+        distillaModelloRouter_2.trovaPrendiParola("cisco", 2);
+    return ModelloRouter;
+  }
+
+  public String scriviModelloRouterProcessore() {
+    try {
+      String ModelloRouter = distillaShVer.trovaPrendiRegularExp(
+          "cisco.{0,100}processor")[0];
+      return ModelloRouter;
+    }
+    catch (NullPointerException err) {
+      messaggi.append(err.toString());
+      return "";
+    }
+  }
+
+  //Nuovi metodi
+  public String scriviRAMShared() {
+    try {
+      String RAMShared = "";
+      String RAM = "";
+      String Shared = "";
+      String rigaRAMShared = distillaShVer.trovaPrendiRiga(
+          "cisco.{0,100}processor");
+      distillatore distillaRAMShared_2 = new distillatore(rigaRAMShared,
+          messaggi);
+      String tempRAMShared = distillaRAMShared_2.trovaPrendiParola("with", 2);
+      tempRAMShared = tempRAMShared.replaceAll("[kK]", "");
+      // calcolo degli estremi delle sottostringhe
+      int startRAM = 0;
+      int endRAM = tempRAMShared.indexOf("/");
+      int startShared = tempRAMShared.indexOf("/") + 1;
+      int endShared = tempRAMShared.length();
+      //estrazione delle sottostringhe
+      String tempRAM = tempRAMShared.substring(startRAM, endRAM);
+      String tempShared = tempRAMShared.substring(startShared, endShared);
+      // conversione a valori interi e passaggio a MB
+      Integer integerRAM = new Integer(tempRAM);
+      Integer integerShared = new Integer(tempShared);
+      int numRAM = integerRAM.intValue() / 1024;
+      int numShared = integerShared.intValue() / 1024;
+      // ritorno a stringa
+      RAM = RAM.valueOf(numRAM);
+      Shared = RAM.valueOf(numShared);
+      // deduzione stringa finale
+      RAMShared = RAM + "/" + Shared + " MB";
+      return RAMShared;
+    }
+    catch (StringIndexOutOfBoundsException e) {
+      return "";
+    }
+  }
+
+  public String scriviFlash() {
+    //estrapola la Flash anche quando è composta da piu' di una voce
+    //inoltre somma le voci e converte in MB
+    String[] flashVettore = distillaShVer.separaBlocchiRipetuti(
+        "[0-9]{1,10}[kK] bytes of processor board System flash", "\\n");
+    String flash = "";
+    int numFlash = 0;
+    int intFlash;
+    try {
+      for (int i = 0; i < flashVettore.length; i++) {
+        distillatore unaFlash = new distillatore(flashVettore[i], messaggi);
+        String strFlash1 = unaFlash.trovaPrendiParola("bytes", -7);
+        String strFlash = strFlash1.replaceAll("[kK]", "");
+        Integer integerFlash = new Integer(strFlash);
+        numFlash = numFlash + integerFlash.intValue();
+      }
+      flash = flash.valueOf(numFlash / 1024) + " MB";
+    }
+    catch (NullPointerException e) {}
+    return flash;
+  }
+
+  public String scriviSerialNumber() {
+    String rigaSerialNumber = distillaShVer.trovaPrendiRiga("Processor board");
+    distillatore distillaSerialNumber = new distillatore(rigaSerialNumber,
+        messaggi);
+    String SerialNumber = distillaSerialNumber.trovaPrendiParola("ID", 2);
+    String SerialNumber2 = distillaSerialNumber.trovaPrendiParola(
+        "ID [A-Z0-9]* ", 2);
+    Pattern verificaSNpattern = Pattern.compile("[\\(\\)A-Z0-9]*");
+    Matcher verificaSN = verificaSNpattern.matcher(SerialNumber2);
+    if (verificaSN.find()) {
+      SerialNumber += " " + SerialNumber2;
+    }
+    return SerialNumber;
+  }
+
+  //sistillaShVer fine ++++++++++++++++++++++++++++++++++++++++++++++
+
+  //sistillaShRun ++++++++++++++++++++++++++++++++++++++++++++++
+
+  public String scriviHostName() {
+    String HostName = distillaShRun.trovaPrendiParola("hostname", 2);
+    return HostName;
+  }
+
+  public String scriviHostNameDaShVer() {
+    String HostName = distillaShVer.trovaPrendiParola(" uptime is ", -12);
+    return HostName;
+  }
+
+  public String scriviConfReg() {
+    String ConfReg = distillaShVer.trovaPrendiParola(
+        "Configuration register is", 2);
+    return ConfReg;
+  }
+
+  public String scriviBanner() {
+    String Banner = distillaShRun.trovaPrendiBanner();
+    Banner = Banner.replace('\t', ' ');
+    Banner = Banner.replace('\n', ' ');
+    return Banner;
+  }
+
+  public String scriviIndirizzoLoopBack() {
+    String IndirizzoLoopBack = "";
+    int i = 0;
+    boolean uscire = false;
+    try {
+      while ( (i < interfacce.length) & !uscire) {
+        distillatore distillaInterfaccia = new distillatore(interfacce[i],
+            messaggi);
+        String tipoInterfaccia = distillaInterfaccia.trovaPrendiParola(
+            "interface", 2);
+        Pattern condizionePattern = Pattern.compile("Loopback");
+        Matcher condizione = condizionePattern.matcher(tipoInterfaccia);
+
+        if (condizione.find()) {
+          IndirizzoLoopBack = IndirizzoLoopBack +
+              distillaInterfaccia.trovaPrendiParola("ip address", 3);
+          uscire = true;
+        }
+        i++;
+      }
+    }
+    catch (NullPointerException e) {}
+    return IndirizzoLoopBack;
+  }
+
+  public String scriviDLCItutti() {
+    String DLCI = "";
+    int i = 0;
+    boolean uscire = false;
+    try {
+      while (i < interfacce.length) {
+        distillatore distillaInterfaccia = new distillatore(interfacce[i],
+            messaggi);
+        String DLCIaggiunto1 = distillaInterfaccia.trovaPrendiParola(
+            "frame-relay interface-dlci", 2);
+        if (DLCIaggiunto1 != "") {
+          DLCI = DLCI + DLCIaggiunto1 + " ";
+        }
+
+        String DLCIaggiunto2 = distillaInterfaccia.trovaPrendiParola(
+            "frame-relay map ip [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}",
+            2);
+        if (DLCIaggiunto2 != "") {
+          DLCI = DLCI + DLCIaggiunto2 + " ";
+        }
+        i++;
+      }
+    }
+    catch (NullPointerException e) {}
+    return DLCI;
+  }
+
+  public String scriviDLCI(String interfaccia) {
+    String DLCI = "";
+    distillatore distillaInterfaccia = new distillatore(interfaccia, messaggi);
+    String DLCI_1 = distillaInterfaccia.trovaPrendiParola(
+        "frame-relay interface-dlci", 2);
+    if (DLCI_1 != "") {
+      DLCI = DLCI_1;
+    }
+    else {
+      String DLCI_2 = distillaInterfaccia.trovaPrendiParola(
+          "frame-relay map ip [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}",
+          2);
+      if (DLCI_2 != "") {
+        DLCI = DLCI_2;
+      }
+    }
+    return DLCI;
+  }
+
+  public String scrivi_VPI_VCI(String interfaccia) {
+    String VPI_VCI = "";
+    distillatore distillaInterfaccia = new distillatore(interfaccia, messaggi);
+    String[] VPI_VCI_array_sporco = distillaInterfaccia.trovaPrendiRegularExp(
+        "pvc .*[0-9]+/[0-9]+");
+    if (VPI_VCI_array_sporco != null) {
+      distillatore distillaSporco = new distillatore(VPI_VCI_array_sporco[0],
+          messaggi);
+      String[] VPI_VCI_array = distillaSporco.trovaPrendiRegularExp(
+          "[0-9]+/[0-9]+");
+      VPI_VCI = VPI_VCI_array[0];
+    }
+    return VPI_VCI;
+  }
+
+  public boolean bandwidthBassa() {
+    boolean alta = false;
+    int i = 0;
+    try {
+      while (i < interfacce.length) {
+        distillatore distillaInterfaccia = new distillatore(interfacce[i],
+            messaggi);
+        if (distillaInterfaccia.verificaParolaBool(
+            "\n *ip address [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}")) {
+          String BWstring = distillaInterfaccia.trovaPrendiParola(
+              "\n *bandwidth", 2);
+          if (BWstring != "") {
+            int BW = (new Integer(BWstring)).intValue();
+            if (BW < 64) {
+              alta = true;
+            }
+          }
+        }
+        i++;
+      }
+    }
+    catch (NullPointerException e) {}
+    return alta;
+  }
+
+  public String scriviBannerSiNo() {
+    String BannerSiNo = distillaShRun.verificaParola("banner");
+    return BannerSiNo;
+  }
+
+  public String scriviCommunity() {
+
+    String[] communityVettore = distillaShRun.separaBlocchiRipetuti(
+        "snmp-server community", "\\n");
+    String community = "";
+    try {
+      for (int i = 0; i < communityVettore.length; i++) {
+        distillatore unaCommunity = new distillatore(communityVettore[i],
+            messaggi);
+        community = community +
+            unaCommunity.trovaPrendiParola("snmp-server community", 2, 2) + " ";
+      }
+    }
+    catch (NullPointerException e) {}
+    return community;
+
+  }
+
+  public String scriviNumeriNellaDescriptionBRI() {
+    String Numeri = "";
+    String tuttiNumeri;
+    int i = 0;
+    boolean uscire = false;
+    try {
+      while ( (i < interfacce.length)) {
+        distillatore distillaInterfaccia = new distillatore(interfacce[i],
+            messaggi);
+        String tipoInterfaccia = distillaInterfaccia.trovaPrendiParola(
+            "interface", 2);
+        Pattern condizionePattern = Pattern.compile("BRI");
+        Matcher condizione = condizionePattern.matcher(tipoInterfaccia);
+        if (condizione.find()) {
+          String description = distillaInterfaccia.trovaPrendiRiga(
+              "description");
+          distillatore distillaDescription = new distillatore(description,
+              messaggi);
+          Numeri = Numeri + distillaDescription.trovaPrendiTuttiNumeri() + " ";
+        }
+        i++;
+      }
+    }
+    catch (NullPointerException e) {}
+    return Numeri;
+  }
+
+  public String scriviIdentificativiTD() {
+    String identificativoTD = "";
+    int i = 0;
+    boolean uscire = false;
+    try {
+      while ( (i < interfacce.length)) {
+        distillatore distillaInterfaccia = new distillatore(interfacce[i],
+            messaggi);
+        String tipoInterfaccia = distillaInterfaccia.trovaPrendiParola(
+            "interface", 2);
+        Pattern condizionePattern = Pattern.compile("Serial");
+        Matcher condizione = condizionePattern.matcher(tipoInterfaccia);
+        if (condizione.find()) {
+          String description = distillaInterfaccia.trovaPrendiRiga(
+              "description");
+          Pattern TDpattern = Pattern.compile("[0-9]{6,6}/[0-9]{2,4}");
+          Matcher TD = TDpattern.matcher(description);
+          if (TD.find()) {
+            identificativoTD = identificativoTD +
+                description.substring(TD.start(), TD.end()) + " ";
+          }
+        }
+        i++;
+      }
+    }
+    catch (NullPointerException e) {}
+    return identificativoTD;
+  }
+
+  public String scriviIdentificativiTDindirizzo(String indirizzo) {
+    String identificativoTD = "";
+    int i = 0;
+    boolean uscire = false;
+    try {
+      while ( (i < interfacce.length)) {
+        distillatore distillaInterfaccia = new distillatore(interfacce[i],
+            messaggi);
+        String tipoInterfaccia = distillaInterfaccia.trovaPrendiParola(
+            "interface", 2);
+        Pattern condizionePattern = Pattern.compile("Serial");
+        Matcher condizione = condizionePattern.matcher(tipoInterfaccia);
+        if (condizione.find()) {
+          String indirizzoInterfaccia = distillaInterfaccia.trovaPrendiParola(
+              "ip address", 3);
+          boolean indirizzoGiusto = (0 ==
+                                     indirizzo.compareTo(indirizzoInterfaccia));
+          if (indirizzoGiusto) {
+            String description = distillaInterfaccia.trovaPrendiRiga(
+                "description");
+            Pattern TDpattern = Pattern.compile("[0-9]{6,6}/[0-9]{2,4}");
+            Matcher TD = TDpattern.matcher(description);
+            if (TD.find()) {
+              identificativoTD = identificativoTD +
+                  description.substring(TD.start(), TD.end()) + " ";
+            }
+          }
+        }
+        i++;
+      }
+    }
+    catch (NullPointerException e) {}
+    return identificativoTD;
+  }
+
+// nuovi metodi
+  public String scriviIP_P2PtuttiOld() {
+    String IP_P2P = "";
+    int i = 0;
+    boolean uscire = false;
+    try {
+      while (i < interfacce.length) {
+        boolean trovata1 = (interfacce[i].indexOf("frame-relay interface-dlci") !=
+                            -1);
+        boolean trovata2 = (interfacce[i].indexOf("frame-relay map ip") != -1);
+        distillatore distillaInterfaccia = new distillatore(interfacce[i],
+            messaggi);
+        String IP_P2Paggiunto1 = "";
+        String IP_P2Paggiunto2 = "";
+        if (trovata1) {
+          IP_P2Paggiunto1 = distillaInterfaccia.trovaPrendiParola("ip address",
+              2);
+        }
+        if (IP_P2Paggiunto1 != "") {
+          IP_P2P = IP_P2P + IP_P2Paggiunto1 + " ";
+        }
+        if (trovata2) {
+          IP_P2Paggiunto2 = distillaInterfaccia.trovaPrendiParola("ip address",
+              2);
+        }
+        if (IP_P2Paggiunto2 != "") {
+          IP_P2P = IP_P2P + IP_P2Paggiunto2 + " ";
+        }
+        i++;
+      }
+    }
+    catch (NullPointerException e) {}
+    return IP_P2P;
+  }
+
+  public String scriviIP_P2Ptutti() {
+    try {
+      String tipiInclusi = "ATM Ser";
+      String IP_P2P = "";
+      int i = 0;
+      while (i < interfacce.length) {
+        distillatore distillaIndirizzoIP = new distillatore(interfacce[i],
+            messaggi);
+        String tipo = distillaIndirizzoIP.trovaPrendiParola("interface", 2);
+        tipo = tipo.substring(0, 3);
+        boolean tipoGiusto = tipiInclusi.indexOf(tipo) != -1;
+        String IP_P2Paggiunto = "";
+        if (tipoGiusto) {
+          IP_P2Paggiunto = distillaIndirizzoIP.trovaPrendiParola(
+              "\n ip address", 3);
+        }
+        if (IP_P2Paggiunto != "") {
+          IP_P2P = IP_P2P + IP_P2Paggiunto + "  ";
+        }
+        i++;
+      } //end while
+      // elimina gli spazi multipli
+      while (IP_P2P.indexOf("   ") != -1) {
+        IP_P2P = IP_P2P.replaceAll(" {3,100}", "  ");
+      }
+      return IP_P2P;
+    }
+    catch (NullPointerException e) {
+      return "";
+    }
+  }
+
+  public String scriviIP_P2Pdialer() {
+    try {
+      String tipiInclusi = "BRI Dia";
+      String IP_P2P = "";
+      int i = 0;
+      while (i < interfacce.length) {
+        distillatore distillaIndirizzoIP = new distillatore(interfacce[i],
+            messaggi);
+        String tipo = distillaIndirizzoIP.trovaPrendiParola("interface", 2);
+        tipo = tipo.substring(0, 3);
+        boolean tipoGiusto = tipiInclusi.indexOf(tipo) != -1;
+        String IP_P2Paggiunto = "";
+        if (tipoGiusto) {
+          IP_P2Paggiunto = distillaIndirizzoIP.trovaPrendiParola(
+              "\n ip address", 3);
+        }
+        if (IP_P2Paggiunto != "") {
+          IP_P2P = IP_P2P + IP_P2Paggiunto + "  ";
+        }
+        i++;
+      } //end while
+      // elimina gli spazi multipli
+      while (IP_P2P.indexOf("   ") != -1) {
+        IP_P2P = IP_P2P.replaceAll(" {3,100}", "  ");
+      }
+      return IP_P2P;
+    }
+    catch (NullPointerException e) {
+      return "";
+    }
+  }
+
+  public String scriviTacacsSiNo() {
+    String TacacsSiNo = distillaShRun.verificaParola("tacacs+");
+    return TacacsSiNo;
+  }
+
+//sistillaShRun fine ++++++++++++++++++++++++++++++++++++++++++++++
+
+// Metodi per distillare l'intestazione del programma Aladino *************************************
+//*************************************************************************************************
+   public String scriviIndirizzoDiscovery() {
+     String IndirizzoDiscovery = distillaIntestazione.trovaPrendiParola(
+         "\nindirizzo di censimento:", 2);
+     return IndirizzoDiscovery;
+   }
+
+  public String scriviUser() {
+    String User = distillaIntestazione.trovaPrendiParola("\nuser:", 2);
+    return User;
+  }
+
+  public String scriviUserPassword() {
+    String UserPassword = distillaIntestazione.trovaPrendiParola("\nuserPassw:",
+        2);
+    return UserPassword;
+  }
+
+  public String scriviEnablePassword() {
+    String EnablePassword = distillaIntestazione.trovaPrendiParola(
+        "enablePassw:", 2);
+    return EnablePassword;
+  }
+
+  public String scriviEndVerificato() {
+    String BannerSiNo = distillaIntestazione.verificaParola("\\nend");
+    return BannerSiNo;
+  }
+
+  public ArrayList scriviDlswRemotePeer() {
+    String[] DlswRemotePeerVettoreSporco = distillaShRun.separaBlocchiRipetuti(
+        "\\ndlsw remote-peer [0-9]+ tcp", "\\n");
+    ArrayList DlswRemotePeerVettore = new ArrayList();
+    try {
+      for (int i = 0; i < DlswRemotePeerVettoreSporco.length; i++) {
+        distillatore unDlswRemotePeer = new distillatore(
+            DlswRemotePeerVettoreSporco[i], messaggi);
+        DlswRemotePeerVettore.add(unDlswRemotePeer.trovaPrendiParola(
+            "\\ndlsw remote-peer [0-9]+ tcp", 2));
+      }
+    }
+    catch (NullPointerException e) {}
+    return DlswRemotePeerVettore;
+  }
+
+// Metodi per distillare l'intestazione del programma Aladino *************************************
+//*************************************************************************************************
+
+//**************************************************************************************************
+//************ Metodi per generare l'albero ********************************************************
+     public String[] separaSlotShDiag() {
+       if (verificaShDiag) {
+         String[] slotSeparati = distillaShDiag.separaBlocchiRipetuti(
+             "\\nSlot [0-9]*( \\(virtual\\))?:");
+         return slotSeparati;
+       }
+       else {
+         return null;
+       }
+     }
+
+  //public String[] separa
+
+  public nodo generaAlberoTrivial(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String modelloRouter = scriviModelloRouter();
+    albero.aggiungiVariabile("modello", modelloRouter);
+    String[] slotSeparati = separaSlotShDiag();
+    if (slotSeparati != null) {
+      for (int i = 0; i < slotSeparati.length; i++) {
+        albero.aggiungiRamo("Slot: " + String.valueOf(i));
+        distillatore distillaSlot = new distillatore(slotSeparati[i], messaggi);
+        ArrayList listaPartNumber =
+            distillaSlot.trovaPrendiProssimoNumeroMultiplo("Part number");
+        for (int j = 0; j < listaPartNumber.size(); j++) {
+          String partNumber = (String) listaPartNumber.get(j);
+          partNumber = partNumber.substring(0, partNumber.lastIndexOf("-"));
+          albero.ramo(i).aggiungiVariabile("Part number", partNumber);
+        }
+      }
+    }
+    else { //if (slotSeparati != null)
+      ArrayList interfacce = distillaShVer.TrovaPrendiContenutoFra("[0-9]+",
+          "interface");
+      for (int i = 0; i < interfacce.size(); i++) {
+        String stringaInShVer = (String) interfacce.get(i);
+        while (stringaInShVer.indexOf("  ") != -1) {
+          stringaInShVer = stringaInShVer.replaceAll(" {2,100}", " ");
+        }
+        albero.aggiungiVariabile("interfacce", stringaInShVer);
+      }
+    } //end else {//if (slotSeparati != null)
+    return albero;
+  }
+
+  public nodo generaAlberoDLSW(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String[] comandiDLSW = distillaShRun.separaBlocchiRipetuti("\ndlsw", ".\n");
+    if (comandiDLSW != null) {
+      Pattern indirizzo = Pattern.compile(
+          "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}");
+      Matcher indirizzoMatcher = indirizzo.matcher(comandiDLSW[0]);
+      comandiDLSW[0] = indirizzoMatcher.replaceFirst("-INDIRIZZO-");
+      for (int i = 0; i < comandiDLSW.length; i++) {
+        while (comandiDLSW[i].indexOf("\n") != -1) {
+          comandiDLSW[i] = comandiDLSW[i].replaceAll("\n+", "");
+        }
+        albero.aggiungiVariabile("", comandiDLSW[i]);
+      }
+      return albero;
+    }
+    else {
+      return null;
+    }
+  }
+
+  public nodo generaAlberoISDN(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String[] comandiISDN = distillaShRun.separaBlocchiRipetuti(
+        "(\n *dialer string)|(\n *dialer map)", ".\n");
+    if (comandiISDN != null) {
+      for (int i = 0; i < comandiISDN.length; i++) {
+        while (comandiISDN[i].indexOf("\n") != -1) {
+          comandiISDN[i] = comandiISDN[i].replaceAll("\n+", "");
+        }
+        albero.aggiungiVariabile("", comandiISDN[i]);
+      }
+      return albero;
+    }
+    else {
+      return null;
+    }
+  }
+
+  public nodo generaAlberoStatiche(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String[] statiche = distillaShRun.separaBlocchiRipetuti("(\n *ip route )",
+        ".\n");
+    if (statiche != null) {
+      for (int i = 0; i < statiche.length; i++) {
+        while (statiche[i].indexOf("\n") != -1) {
+          statiche[i] = statiche[i].replaceAll("\n+", "");
+        }
+        albero.aggiungiVariabile("", statiche[i]);
+      }
+      return albero;
+    }
+    else {
+      return null;
+    }
+  }
+
+  public nodo generaAlberoDistributeList(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    ArrayList numeriAccessList = new ArrayList();
+    String[] distribute = distillaShRun.separaBlocchiRipetuti(
+        "(\n *distribute-list)", ".\n");
+    if (distribute != null) {
+      for (int i = 0; i < distribute.length; i++) {
+        while (distribute[i].indexOf("\n") != -1) {
+          distribute[i] = distribute[i].replaceAll("\n+", "");
+        }
+        albero.aggiungiVariabile("", distribute[i]);
+        distillatore distillaDistribute = new distillatore(distribute[i],
+            messaggi);
+        String numero = distillaDistribute.trovaPrendiParola("distribute-list",
+            2);
+        if (!numeriAccessList.contains(numero)) {
+          numeriAccessList.add(numero);
+        }
+      }
+      for (int i = 0; i < numeriAccessList.size(); i++) {
+        String comandoAccessList = "\n *access-list *" + numeriAccessList.get(i) +
+            " ";
+        String[] accessList = distillaShRun.separaBlocchiRipetuti(
+            comandoAccessList, ".\n");
+        if (accessList != null) {
+          for (int j = 0; j < accessList.length; j++) {
+            while (accessList[j].indexOf("\n") != -1) {
+              accessList[j] = accessList[j].replaceAll("\n+", "");
+            }
+            albero.aggiungiVariabile("", accessList[j]);
+          }
+        }
+      }
+      return albero;
+    }
+    else {
+      return null;
+    }
+
+  }
+
+  public nodo generaAlberoRedistribute(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String[] routingProtocols = distillaShRun.separaBlocchiRipetuti(
+        "(\n!\n *router )", ".\n!\n");
+    boolean redistributePresente = false;
+    if (routingProtocols != null) {
+      for (int i = 0; i < routingProtocols.length; i++) {
+        distillatore distillaRoutingProtocol = new distillatore(
+            routingProtocols[i], messaggi);
+        String protocollo = distillaRoutingProtocol.trovaPrendiRigaTutta(
+            "\n *router ");
+        albero.aggiungiRamo("");
+        albero.ramo(i).aggiungiVariabile("", protocollo.substring(1));
+        String[] redistribute = distillaRoutingProtocol.separaBlocchiRipetuti(
+            "\n *redistribute ", ".\n");
+        if (redistribute != null) {
+          redistributePresente = true;
+          for (int j = 0; j < redistribute.length; j++) {
+            while (redistribute[j].indexOf("\n") != -1) {
+              redistribute[j] = redistribute[j].replaceAll("\n+", "");
+            }
+            albero.ramo(i).aggiungiVariabile("", redistribute[j]);
+          }
+        }
+      }
+      if (redistributePresente) {
+        return albero;
+      }
+      else {
+        return null;
+      }
+    }
+    else {
+      return null;
+    }
+  }
+
+  public nodo generaAlberoNTP(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String[] comandiNTP = distillaShRun.separaBlocchiRipetuti("\nntp", ".\n");
+    if (comandiNTP != null) {
+      for (int i = 0; i < comandiNTP.length; i++) {
+        while (comandiNTP[i].indexOf("\n") != -1) {
+          comandiNTP[i] = comandiNTP[i].replaceAll("\n+", "");
+          if (comandiNTP[i].indexOf("clock-period") != -1) {
+            Pattern numero = Pattern.compile("[0-9]+");
+            Matcher numeroMatcher = numero.matcher(comandiNTP[i]);
+            comandiNTP[i] = numeroMatcher.replaceFirst("-NUMERO-");
+          }
+        }
+        albero.aggiungiVariabile("", comandiNTP[i]);
+      }
+      return albero;
+    }
+    else {
+      return null;
+    }
+  }
+
+  public nodo generaAlberoAAATacacs(String nome) {
+    boolean returnFlag = false;
+    nodo albero = new nodo(nome, messaggi);
+    String[] comandiTacacs = distillaShRun.separaBlocchiRipetuti("\naaa", ".\n");
+    if (comandiTacacs != null) {
+      for (int i = 0; i < comandiTacacs.length; i++) {
+        while (comandiTacacs[i].indexOf("\n") != -1) {
+          comandiTacacs[i] = comandiTacacs[i].replaceAll("\n+", "");
+        }
+        albero.aggiungiVariabile("", comandiTacacs[i]);
+      }
+      returnFlag = true;
+    }
+    String[] comandiAAA = distillaShRun.separaBlocchiRipetuti("\ntacacs-server",
+        ".\n");
+    if (comandiAAA != null) {
+      for (int i = 0; i < comandiAAA.length; i++) {
+        while (comandiAAA[i].indexOf("\n") != -1) {
+          comandiAAA[i] = comandiAAA[i].replaceAll("\n+", "");
+        }
+        albero.aggiungiVariabile("", comandiAAA[i]);
+      }
+      returnFlag = true;
+    }
+    if (returnFlag) {
+      return albero;
+    }
+    else {
+      return null;
+    }
+  }
+
+  public nodo generaAlberoAccessoVTY_CON_AUX(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String[] configurazioneCON = distillaShRun.separaBlocchiRipetuti(
+        "\nline con", "(.\nline|\n!)");
+    String[] configurazioneVTY = distillaShRun.separaBlocchiRipetuti(
+        "\nline vty", "(.\nline|\n!)");
+    String[] configurazioneAUX = distillaShRun.separaBlocchiRipetuti(
+        "\nline aux", "(.\nline|\n!)");
+    if (configurazioneCON != null) {
+      distillatore distillaCON = new distillatore(configurazioneCON[0],
+                                                  messaggi);
+      albero.aggiungiVariabile("",
+                               "password console: " +
+                               distillaCON.verificaParola("password"));
+      albero.aggiungiVariabile("",
+                               "login con: " +
+                               distillaCON.trovaPrendiRigaTutta("login"));
+    }
+    else {
+      albero.aggiungiVariabile("", "console: non configurata");
+    }
+    if (configurazioneVTY != null) {
+      distillatore distillaVTY = new distillatore(configurazioneVTY[0],
+                                                  messaggi);
+      albero.aggiungiVariabile("",
+                               "password vty: " +
+                               distillaVTY.verificaParola("password"));
+      albero.aggiungiVariabile("",
+                               "login vty: " +
+                               distillaVTY.trovaPrendiRigaTutta("login"));
+    }
+    else {
+      albero.aggiungiVariabile("", "vty: non configurata");
+    }
+    if (configurazioneAUX != null) {
+      distillatore distillaAUX = new distillatore(configurazioneAUX[0],
+                                                  messaggi);
+      albero.aggiungiVariabile("",
+                               "password aux: " +
+                               distillaAUX.verificaParola("password"));
+      albero.aggiungiVariabile("",
+                               "login aux: " +
+                               distillaAUX.trovaPrendiRigaTutta("login"));
+    }
+    else {
+      albero.aggiungiVariabile("", "aux: non configurata");
+    }
+    return albero;
+  }
+
+  public nodo generaAlberoRelease(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String versioneIOS_a = scriviVersioneIOS_a();
+    String versioneIOS_b = scriviVersioneIOS_b();
+    String versioneIOS_c = scriviVersioneIOS_c();
+    albero.aggiungiVariabile("", "Software " + versioneIOS_a);
+    albero.aggiungiVariabile("", "Version " + versioneIOS_b);
+    albero.aggiungiVariabile("", "RELEASE SOFTWARE " + versioneIOS_c);
+    return albero;
+  }
+
+  public nodo generaAlberoLogging(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    if (shLogging != null) {
+      String[] logged = distillaShLogging.trovaPrendiRegularExp(
+          "[a-zA-Z]+ logging: [a-zA-Z]+ ?([a-zA-Z]+)?");
+      if (logged != null) {
+        for (int i = 0; i < logged.length; i++) {
+          albero.aggiungiVariabile("", logged[i]);
+        }
+      }
+      String[] loggingTo = distillaShLogging.trovaPrendiRegularExp(
+          "Logging to [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}");
+      if (loggingTo != null) {
+        for (int i = 0; i < loggingTo.length; i++) {
+          albero.aggiungiVariabile("", loggingTo[i]);
+        }
+      }
+      return albero;
+    }
+    else {
+      return null;
+    }
+  }
+
+  public nodo generaAlberoTrap(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String[] comandiTrap = distillaShRun.trovaPrendiRegularExp(
+        "((no )?snmp-server.*trap.*)|((no )?snmp-server host.*)");
+    if (comandiTrap != null) {
+      for (int i = 0; i < comandiTrap.length; i++) {
+        albero.aggiungiVariabile("", comandiTrap[i]);
+      }
+    }
+    return albero;
+  }
+
+  public nodo generaAlberoProtocolliRouting(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+
+    String[] protocolli = distillaShRun.separaBlocchiRipetuti("\n *router",
+        "\n!\n");
+    if (protocolli != null) {
+      for (int i = 0; i < protocolli.length; i++) {
+        distillatore distillaProtocollo = new distillatore(protocolli[i],
+            messaggi);
+        String[] righe = distillaProtocollo.separaBlocchiRipetuti("\n");
+        for (int j = 0; j < righe.length; j++) {
+          albero.aggiungiVariabile("", righe[j]);
+        }
+      }
+    }
+    return albero;
+  }
+
+  public nodo generaAlberoConfReg(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    albero.aggiungiVariabile("", "Configuration Register: " + scriviConfReg());
+    return albero;
+  }
+
+  public nodo generaAlberoLoopbackSiNo(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    String risultato = "loopback non configurata";
+    int i = 0;
+    boolean configurataBene = false;
+    while (i < interfacce.length && !configurataBene) {
+      distillatore distillaInterfaccia = new distillatore(interfacce[i],
+          messaggi);
+      if (distillaInterfaccia.verificaParolaBool("interface Loopback")) {
+        if (distillaInterfaccia.verificaParolaBool("no ip address")) {
+          risultato = "loopback configurata, ma senza ip address";
+        }
+        else if (distillaInterfaccia.verificaParolaBool("shutdown")) {
+          risultato = "loopback configurata, ma in shutdown";
+        }
+        else {
+          risultato = "loopback configurata";
+          configurataBene = true;
+        }
+      }
+      i++;
+    }
+    albero.aggiungiVariabile("", risultato);
+    return albero;
+  }
+
+  public nodo generaAlberoSicurezzaComandiBase(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    if (distillaShRun.verificaParolaBool("no ip http server")) {
+      albero.aggiungiVariabile("", "http server disabilitato");
+    }
+    else {
+      if (distillaShRun.verificaParolaBool("ip http server")) {
+        albero.aggiungiVariabile("", "http server abilitato");
+      }
+      else {
+        albero.aggiungiVariabile("", "http server disabilitato");
+      }
+    }
+    if (distillaShRun.verificaParolaBool("no ip finger")) {
+      albero.aggiungiVariabile("", "finger disabilitato");
+    }
+    else {
+      albero.aggiungiVariabile("", "finger abilitato");
+    }
+    if (distillaShRun.verificaParolaBool("no service tcp-small-servers")) {
+      albero.aggiungiVariabile("", "tcp-small-servers disabilitato");
+    }
+    else {
+      if (distillaShRun.verificaParolaBool("service tcp-small-servers")) {
+        albero.aggiungiVariabile("", "tcp-small-servers abilitato");
+      }
+      else {
+        albero.aggiungiVariabile("", "tcp-small-servers disabilitato");
+      }
+    }
+    if (distillaShRun.verificaParolaBool("no service udp-small-servers")) {
+      albero.aggiungiVariabile("", "udp-small-servers disabilitato");
+    }
+    else {
+      if (distillaShRun.verificaParolaBool("service udp-small-servers")) {
+        albero.aggiungiVariabile("", "udp-small-servers abilitato");
+      }
+      else {
+        albero.aggiungiVariabile("", "udp-small-servers disabilitato");
+      }
+    }
+    if (distillaShRun.verificaParolaBool("no service pad")) {
+      albero.aggiungiVariabile("", "service pad disabilitato");
+    }
+    else {
+      albero.aggiungiVariabile("", "service pad abilitato");
+    }
+    if (distillaShRun.verificaParolaBool("no ip bootp server")) {
+      albero.aggiungiVariabile("", "bootp server disabilitato");
+    }
+    else {
+      albero.aggiungiVariabile("", "bootp server abilitato");
+    }
+    if (distillaShRun.verificaParolaBool("no service password-encryption")) {
+      albero.aggiungiVariabile("", "service password-encryption disabilitato");
+    }
+    else {
+      if (distillaShRun.verificaParolaBool("service password-encryption")) {
+        albero.aggiungiVariabile("", "service password-encryption abilitato");
+      }
+      else {
+        albero.aggiungiVariabile("", "service password-encryption disabilitato");
+      }
+    }
+    return albero;
+  }
+
+  public int scriviContaSerialiNonWAN() {
+    int contatore = 0;
+    for (int i = 0; i < interfacceSh.length; i++) {
+      distillatore distillaInterfaccia = new distillatore(interfacceSh[i],
+          messaggi);
+      boolean ip_address = distillaInterfaccia.verificaParolaBool(
+          "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}/[0-9]{1,2}");
+      boolean shutdown = distillaInterfaccia.verificaParolaBool(
+          "administratively down");
+      boolean serial = distillaInterfaccia.verificaParolaBool("Serial");
+      boolean ppp = distillaInterfaccia.verificaParolaBool("Encapsulation PPP");
+      boolean frameRelay = distillaInterfaccia.verificaParolaBool(
+          "Encapsulation FRAME-RELAY");
+      boolean deleted = distillaInterfaccia.verificaParolaBool("is deleted");
+      if (!ip_address && !shutdown && serial && !ppp && !frameRelay && !deleted) {
+        contatore++;
+      }
+    }
+    return contatore;
+  }
+
+  public nodo generaAlberoSummarization(String nome) {
+    nodo albero = new nodo(nome, messaggi);
+    for (int i = 0; i < interfacce.length; i++) {
+      distillatore distillaInterfaccia = new distillatore(interfacce[i],
+          messaggi);
+      String[] comandiSummary = distillaInterfaccia.trovaPrendiRegularExp(
+          "ip summary-address eigrp.*");
+      if (comandiSummary != null) {
+        for (int k = 0; k < comandiSummary.length; k++) {
+          boolean giàPresente = false;
+          int j = 0;
+          while (!giàPresente && (j < albero.contenuto.size())) {
+            giàPresente = albero.valoreVariabile(j).compareTo(comandiSummary[k]) ==
+                0;
+            j++;
+          }
+          if (!giàPresente) {
+            albero.aggiungiVariabile("", comandiSummary[k]);
+          }
+        }
+      }
+    }
+    return albero;
+  }
+
+  public nodo generaNodo() {
+    String HostName = scriviHostNameDaShVer();
+    nodo nodo = new nodo(HostName, messaggi);
+    nodo.grappa.CommunitySNMP = scriviCommunity();
+    nodo.grappa.Flash = scriviFlash();
+    nodo.grappa.LoopBackGestione = scriviIndirizzoLoopBack();
+    nodo.grappa.IOS = scriviVersioneIOS();
+    nodo.grappa.RAM = scriviRAMShared();
+    nodo.grappa.SerialNumber = scriviSerialNumber();
+    nodo.grappa.Modello = scriviModelloRouter();
+    boolean flagBackUp=false;
+    for (int i = 0; i < interfacce.length; i++) {
+      distillatore distillaInterfaccia = new distillatore(interfacce[i],
+          messaggi);
+      String shutdown=distillaInterfaccia.trovaPrendiParola("\n *shutdown", 0);
+      String interfaccia = distillaInterfaccia.trovaPrendiRiga("\n *interface");
+      String encapsulation = distillaInterfaccia.trovaPrendiParola(
+          "\n *encapsulation", 2);
+      nodo.addInterfaccia(interfaccia, encapsulation);
+      if (shutdown.indexOf("shutdown")==-1) {
+        String[] ip_address = distillaInterfaccia.separaBlocchiRipetuti(
+            "\n *ip address", ".\n");
+        boolean dial = false;
+        if (interfaccia.indexOf("Serial") != -1) {
+          dial = interfaccia.indexOf(":15") != -1;
+        }
+        if (!dial) {
+          dial = interfaccia.indexOf("Dialer") != -1;
+        }
+        if (!dial) {
+          dial = interfaccia.indexOf("BRI") != -1;
+        }
+        if (dial) {
+          flagBackUp=true;
+        }
+        if (ip_address != null) {
+          for (int j = 0; j < ip_address.length; j++) {
+            distillatore distilla_ip_address = new distillatore(ip_address[j],
+                messaggi);
+            String indirizzo = distilla_ip_address.trovaPrendiParola(
+                "\n *ip address", 2);
+            String mask = distilla_ip_address.trovaPrendiParola(
+                "\n *ip address [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}",
+                2);
+            nodo.aggiungiCollegamento(interfaccia, indirizzo, mask);
+            collegamentoIP collegamento = nodo.collegamento(nodo.collegamenti.
+                size() - 1);
+            collegamento.tipoLink = interfaccia.substring(1, 4);
+            collegamento.encapsulation = encapsulation;
+            collegamento.bandwidth = distillaInterfaccia.trovaPrendiParola(
+                "\n *bandwidth", 2);
+            collegamento.shutdown = shutdown;
+            if (distillaInterfaccia.verificaParolaBool("description")) {
+              collegamento.descrizione = distillaInterfaccia.trovaPrendiRiga(
+                  "description");
+//------Grappa------------------------------------------------------------------
+            }
+            collegamento.grappa.DLCI = scriviDLCI(interfacce[i]);
+            String VPI_VCI = scrivi_VPI_VCI(interfacce[i]);
+            if (VPI_VCI.indexOf("/") != -1) {
+              collegamento.grappa.VPI = VPI_VCI.substring(0,
+                  VPI_VCI.indexOf("/"));
+              collegamento.grappa.VCI = VPI_VCI.substring(VPI_VCI.indexOf("/") +
+                  1);
+            }
+//------Grappa------------------------------------------------------------------
+          }
+        }
+      }
+    }
+    if (flagBackUp) {
+      nodo.grappa.flagBackUp="SI";
+    } else {
+      nodo.grappa.flagBackUp="NO";
+    }
+    nodo.completaEncapsulation();
+    return nodo;
+  }
+
+  public nodo generaNodoPlus(ArrayList dialer_map_number,
+                             ArrayList dialer_map_address) {
+    String HostName = scriviHostNameDaShVer();
+    nodo nodo = new nodo(HostName, messaggi);
+    nodo.grappa.CommunitySNMP = scriviCommunity();
+    nodo.grappa.Flash = scriviFlash();
+    nodo.grappa.LoopBackGestione = scriviIndirizzoLoopBack();
+    nodo.grappa.IOS = scriviVersioneIOS();
+    nodo.grappa.RAM = scriviRAMShared();
+    nodo.grappa.SerialNumber = scriviSerialNumber();
+    nodo.grappa.Modello = scriviModelloRouter();
+    for (int i = 0; i < interfacce.length; i++) {
+      distillatore distillaInterfaccia = new distillatore(interfacce[i],
+          messaggi);
+      String interfaccia = distillaInterfaccia.trovaPrendiRiga("\n *interface");
+      String encapsulation = distillaInterfaccia.trovaPrendiParola(
+          "\n *encapsulation", 2);
+      nodo.addInterfaccia(interfaccia, encapsulation);
+      String shutdown=distillaInterfaccia.trovaPrendiParola("\n *shutdown", 0);
+      if (shutdown.indexOf("shutdown")==-1) {
+        String[] comandiISDN = distillaInterfaccia.separaBlocchiRipetuti(
+            "(\n *dialer string)|(\n *dialer map)", ".\n");
+        String[] ip_address = distillaInterfaccia.separaBlocchiRipetuti(
+            "\n *ip address", ".\n");
+        boolean dial = false;
+        if (interfaccia.indexOf("Serial") != -1) {
+          dial = interfaccia.indexOf(":15") != -1;
+        }
+        if (!dial) {
+          dial = interfaccia.indexOf("Dialer") != -1;
+        }
+        if (!dial) {
+          dial = interfaccia.indexOf("BRI") != -1;
+        }
+        if (dial) {
+          if (ip_address != null) {
+            for (int j = 0; j < ip_address.length; j++) {
+              distillatore distilla_ip_address = new distillatore(ip_address[j],
+                  messaggi);
+              String indirizzo = distilla_ip_address.trovaPrendiParola(
+                  "\n *ip address", 2);
+              String mask = distilla_ip_address.trovaPrendiParola(
+                  "\n *ip address [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}",
+                  2);
+              nodo.aggiungiCollegamentoDial(interfaccia, indirizzo, mask);
+              collegamentoIP collegamento = nodo.collegamentoDial(nodo.
+                  collegamentiDial.size() - 1);
+              collegamento.tipoLink = interfaccia.substring(1, 4);
+              collegamento.encapsulation = encapsulation;
+              collegamento.bandwidth = distillaInterfaccia.trovaPrendiParola(
+                  "\n *bandwidth", 2);
+              collegamento.shutdown = shutdown;
+              if (distillaInterfaccia.verificaParolaBool("description")) {
+                collegamento.descrizione = distillaInterfaccia.trovaPrendiRiga(
+                    "description");
+              }
+              if (comandiISDN != null) {
+                collegamento.count_dial_num = comandiISDN.length;
+                for (int h = 0; h < comandiISDN.length; h++) {
+                  distillatore distillaComandoISDN = new distillatore(
+                      comandiISDN[
+                      h], messaggi);
+                  String[] dialer_string = distillaComandoISDN.
+                      trovaPrendiRegularExp("[0-9]{4,}$");
+                  if (dialer_string != null) {
+                    collegamentoIP collegamentoVicino = new collegamentoIP(
+                        "0.0.0.0", "0.0.0.0", messaggi);
+                    collegamento.aggiungiVicino(new nodo("Nome?", messaggi),
+                                                collegamentoVicino, "Nome?",
+                                                "IPaddress?", "identificativo?",
+                                                -1, -1, false, "Dial");
+                    collegamento.vicino(collegamento.vicini.size() - 1).
+                        dialer_number = dialer_string[0];
+                    if (distillaComandoISDN.verificaParolaBool("dialer map")) {
+                      String[] address = distillaComandoISDN.
+                          trovaPrendiRegularExp(
+                          "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}");
+                      dialer_map_number.add(dialer_string[0]);
+                      dialer_map_address.add(address[0]);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        else {
+          if (ip_address != null) {
+            for (int j = 0; j < ip_address.length; j++) {
+              distillatore distilla_ip_address = new distillatore(ip_address[j],
+                  messaggi);
+              String indirizzo = distilla_ip_address.trovaPrendiParola(
+                  "\n *ip address", 2);
+              String mask = distilla_ip_address.trovaPrendiParola(
+                  "\n *ip address [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}",
+                  2);
+              nodo.aggiungiCollegamento(interfaccia, indirizzo, mask);
+              collegamentoIP collegamento = nodo.collegamento(nodo.collegamenti.
+                  size() - 1);
+              collegamento.tipoLink = interfaccia.substring(1, 4);
+              collegamento.encapsulation = distillaInterfaccia.
+                  trovaPrendiParola(
+                  "\n *encapsulation", 2);
+              collegamento.bandwidth = distillaInterfaccia.trovaPrendiParola(
+                  "\n *bandwidth", 2);
+              collegamento.shutdown = shutdown;
+              if (distillaInterfaccia.verificaParolaBool("description")) {
+                collegamento.descrizione = distillaInterfaccia.trovaPrendiRiga(
+                    "description");
+                //------Grappa----------------------------------------------------------------
+              }
+              collegamento.grappa.DLCI = scriviDLCI(interfacce[i]);
+              String VPI_VCI = scrivi_VPI_VCI(interfacce[i]);
+              if (VPI_VCI.indexOf("/") != -1) {
+                collegamento.grappa.VPI = VPI_VCI.substring(0,
+                    VPI_VCI.indexOf("/"));
+                collegamento.grappa.VCI = VPI_VCI.substring(VPI_VCI.indexOf("/") +
+                    1);
+              }
+              //------Grappa----------------------------------------------------------------
+            }
+          }
+        }
+      }
+    }
+    if (nodo.collegamentiDial.size() > 0 && nodo.collegamenti.size() > 0) {
+      nodo.grappa.flagBackUp = "SI";
+    }
+    else {
+      nodo.grappa.flagBackUp = "NO";
+    }
+    nodo.completaEncapsulation();
+    return nodo;
+  }
+
+  public nodo generaNodoNew() {
+    String HostName = scriviHostNameDaShVer();
+    nodo nodo = new nodo(HostName, messaggi);
+    nodo.grappa.CommunitySNMP = scriviCommunity();
+    nodo.grappa.Flash = scriviFlash();
+    nodo.grappa.LoopBackGestione = scriviIndirizzoLoopBack();
+    nodo.grappa.IOS = scriviVersioneIOS();
+    nodo.grappa.RAM = scriviRAMShared();
+    nodo.grappa.SerialNumber = scriviSerialNumber();
+    nodo.grappa.Modello = scriviModelloRouter();
+    boolean flagBackUp=false;
+    for (int i = 0; i < interfacce.length; i++) {
+      distillatore distillaInterfaccia = new distillatore(interfacce[i],
+          messaggi);
+      String shutdown=distillaInterfaccia.trovaPrendiParola("\n *shutdown", 0);
+      String interfaccia = distillaInterfaccia.trovaPrendiRiga("\n *interface");
+      String encapsulation = distillaInterfaccia.trovaPrendiParola(
+          "\n *encapsulation", 2);
+      nodo.addInterfaccia(interfaccia, encapsulation);
+      if (shutdown.indexOf("shutdown")==-1) {
+        String[] ip_address = distillaInterfaccia.separaBlocchiRipetuti(
+            "\n *ip address", ".\n");
+        boolean dial = false;
+        if (interfaccia.indexOf("Serial") != -1) {
+          dial = interfaccia.indexOf(":15") != -1;
+          dial= dial && distillaInterfaccia.verificaParolaBool("dialer");
+        }
+        if (!dial) {
+          dial = interfaccia.indexOf("Dialer") != -1;
+        }
+        if (!dial) {
+          dial = interfaccia.indexOf("BRI") != -1;
+        }
+        if (dial) {
+          flagBackUp=true;
+        }
+        if (ip_address != null) {
+          for (int j = 0; j < ip_address.length; j++) {
+            distillatore distilla_ip_address = new distillatore(ip_address[j],
+                messaggi);
+            String indirizzo = distilla_ip_address.trovaPrendiParola(
+                "\n *ip address", 2);
+            String mask = distilla_ip_address.trovaPrendiParola(
+                "\n *ip address [0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}",
+                2);
+            nodo.aggiungiCollegamento(interfaccia, indirizzo, mask);
+            collegamentoIP collegamento = nodo.collegamento(nodo.collegamenti.
+                size() - 1);
+            collegamento.tipoLink = interfaccia.substring(1, 4);
+            collegamento.encapsulation = encapsulation;
+            collegamento.bandwidth = distillaInterfaccia.trovaPrendiParola(
+                "\n *bandwidth", 2);
+            collegamento.shutdown = shutdown;
+            if (distillaInterfaccia.verificaParolaBool("description")) {
+              collegamento.descrizione = distillaInterfaccia.trovaPrendiRiga(
+                  "description");
+//------Grappa------------------------------------------------------------------
+            }
+            collegamento.grappa.DLCI = scriviDLCI(interfacce[i]);
+            String VPI_VCI = scrivi_VPI_VCI(interfacce[i]);
+            if (VPI_VCI.indexOf("/") != -1) {
+              collegamento.grappa.VPI = VPI_VCI.substring(0,
+                  VPI_VCI.indexOf("/"));
+              collegamento.grappa.VCI = VPI_VCI.substring(VPI_VCI.indexOf("/") +
+                  1);
+            }
+//------Grappa------------------------------------------------------------------
+          }
+        }
+      }
+    }
+    if (flagBackUp) {
+      nodo.grappa.flagBackUp="SI";
+    } else {
+      nodo.grappa.flagBackUp="NO";
+    }
+    nodo.completaEncapsulation();
+    return nodo;
+  }
+
+
+  public void popola_numeri_dial(foresta foresta_numeri_dial,
+                                 String id_collegamento, String hostName) {
+    for (int i = 0; i < interfacce.length; i++) {
+      distillatore distillaInterfaccia = new distillatore(interfacce[i],
+          messaggi);
+      String[] comandiISDN = distillaInterfaccia.separaBlocchiRipetuti(
+          "(\n *dialer string)|(\n *dialer map)", ".\n");
+      if (comandiISDN != null) {
+        for (int h = 0; h < comandiISDN.length; h++) {
+          distillatore distillaComandoISDN = new distillatore(comandiISDN[h],
+              messaggi);
+          String[] dialer_string = distillaComandoISDN.trovaPrendiRegularExp(
+              "[0-9]{4,}$");
+          nodo pianta_numero_dial = new nodo("dial_number", messaggi);
+          if (dialer_string != null) {
+            pianta_numero_dial.aggiungiVariabile("numero", dialer_string[0]);
+          }
+          foresta_numeri_dial.aggiungiPianta(pianta_numero_dial,
+                                             id_collegamento, hostName);
+        }
+      }
+    }
+  }
+//************ Fine dei Metodi per generare l'albero ***********************************************
+//**************************************************************************************************
+
+} // fine esecutore

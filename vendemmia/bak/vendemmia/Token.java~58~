@@ -1,0 +1,99 @@
+package vendemmia;
+import java.awt.*;
+import java.io.*;
+
+/**
+ * <p>Title: vendemmia</p>
+ * <p>Description: raccoglie file di testo contenenti l'output dei comandi sh eseguiti sui router cisco</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class token implements Runnable{
+  tokenDispencer dispencer;
+  int index;
+  registratore reg;
+  TextArea board;
+  Checkbox checkbox_visualizza;
+  configurazione conf;
+  boolean ready=false;
+  boolean destroy;
+  public token(configurazione conf, TextArea messaggi, Checkbox checkbox_visualizza, tokenDispencer dispencer) {
+    this.board= messaggi;
+    this.conf= conf;
+    this.checkbox_visualizza= checkbox_visualizza;
+    this.dispencer = dispencer;
+    Thread token_thread= new Thread(this);
+    token_thread.start();
+  }
+  public void run() {
+    reg = new registratore(conf.indirizzoWS, conf.portaWS, board, checkbox_visualizza);
+    reg.registra();
+      reg.aspettaCaratteriTempo(3, 300);
+      try {
+        reg.scrivi(conf.userWS + "\n");
+      } catch (IOException e) {}
+      reg.aspettaCaratteriTempo(3, 300);
+      try {
+        reg.scrivi(conf.passwWS + "\n");
+      } catch (IOException e) {}
+     try {
+        reg.scrivi("\n");
+        reg.scrivi("\n");
+        reg.scrivi("\n");
+      } catch (IOException e) {}
+
+//------------------------------------------------------------------------------
+      for (int indice=0; indice<conf.addressWSs.size();indice++) {
+        reg.aspettaCaratteriTempo(3, 3000);
+        try {
+          reg.scrivi("telnet " + "\n");
+        }
+        catch (IOException e) {}
+        reg.aspettaCaratteriTempo(3, 3000);
+        try {
+          reg.scrivi("cse" + "\n");
+        }
+        catch (IOException e) {}
+        try {
+          reg.scrivi("\n");
+          reg.scrivi("\n");
+          reg.scrivi("\n");
+        }
+        catch (IOException e) {}
+      }
+//------------------------------------------------------------------------------
+
+
+      if (conf.promptWS==null) {
+        board.append("\nLettura prompt della WS");
+        conf.promptWS = leggiPrompt(10000);
+        board.append(" ---> Prompt della WS: " + conf.promptWS + "\n\n\n");
+      } else {
+        leggiPrompt(10000);
+      }
+      //fine della connessione alla WS
+
+      ready= true;
+  }
+
+  public String leggiPrompt(long tempo) {
+    reg.aspettiamo(tempo/5);
+    String prompt;
+    try {
+      reg.scrivi("\n");
+      reg.aspettaCaratteriTempo(1, 2*tempo/5);
+      int inizioPrompt = reg.bobina.length();
+      reg.scrivi("\n");
+      reg.aspettaCaratteriTempo(1, 2*tempo/5);
+      String promptSporco = reg.bobina.toString().substring(inizioPrompt - 1);
+      distillatore distillaPromptSporco = new distillatore(promptSporco);
+      prompt = distillaPromptSporco.prendiUltimaRiga();
+    } catch (IOException e) {prompt = null; }
+    return prompt;
+  }//fine leggiPrompt(long tempo)
+
+
+}

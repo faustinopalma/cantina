@@ -1,0 +1,43 @@
+package distillatore;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class configurazione {
+
+  public String cartellaVinaccia;
+  public String fileGrappa;
+  public String fileTipi;
+  public String fileTipiDLSW;
+  public String filePeerISDN;
+  public String fileStatiche;
+  public String fileDistribute;
+  public String fileRedistribute;
+  public String fileTopologia;
+  public String fileConfigurazioni;
+  public String fileGrappaHTML;
+  public String fileGDL;
+  public String fileTopologiaSimpleXML;
+  public String fileTopologiaXML;
+  public String fileNTP;
+  public String fileSicurezzaComandiBaseHTML;
+  public String fileVersioneIOS;
+  public String fileAAATacacs;
+  public String fileAccessoCON_VTY_AUX;
+  public String fileLogging;
+  public String fileConfReg;
+  public String fileVerificaLoopback;
+  public String fileTrap;
+  public String fileProtocolli;
+  public String fileSummarization;
+  public String cartellaLavoro;
+
+  public configurazione() {
+  }
+}

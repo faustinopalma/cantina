@@ -1,0 +1,73 @@
+package vendemmia;
+
+import java.awt.*;
+import javax.swing.*;
+import com.borland.jbcl.layout.*;
+import java.awt.event.*;
+
+/**
+ * <p>Title: vendemmia</p>
+ * <p>Description: raccoglie file di testo contenenti l'output dei comandi sh eseguiti sui router cisco</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class add_WS extends JDialog {
+  JPanel panel1 = new JPanel();
+  JTextField jTextField_address = new JTextField();
+  JTextField jTextField_user = new JTextField();
+  JLabel jLabel_address = new JLabel();
+  JLabel jLabel_user = new JLabel();
+  JButton jButton1 = new JButton();
+  XYLayout xYLayout1 = new XYLayout();
+  JTextField jTextField_password = new JTextField();
+  JLabel jLabel_password = new JLabel();
+
+  public add_WS(Frame frame, String title, boolean modal) {
+    super(frame, title, modal);
+    try {
+      jbInit();
+      pack();
+    }
+    catch(Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  public add_WS() {
+    this(null, "", false);
+  }
+  private void jbInit() throws Exception {
+    panel1.setLayout(xYLayout1);
+    jLabel_address.setText("indirizzo");
+    jLabel_user.setText("username");
+    jButton1.setText("OK");
+    jTextField_password.addActionListener(new add_WS_jTextField_password_actionAdapter(this));
+    jLabel_password.setText("password");
+    getContentPane().add(panel1, BorderLayout.CENTER);
+    panel1.add(jTextField_address,  new XYConstraints(155, 27, 201, 26));
+    panel1.add(jTextField_user,  new XYConstraints(155, 70, 201, 26));
+    panel1.add(jLabel_user,  new XYConstraints(57, 70, 82, 26));
+    panel1.add(jLabel_address,  new XYConstraints(57, 27, 82, 26));
+    panel1.add(jButton1, new XYConstraints(55, 174, 299, 36));
+    panel1.add(jTextField_password,  new XYConstraints(155, 113, 201, 26));
+    panel1.add(jLabel_password,  new XYConstraints(57, 113, 82, 26));
+  }
+
+  void jTextField_password_actionPerformed(ActionEvent e) {
+
+  }
+}
+
+class add_WS_jTextField_password_actionAdapter implements java.awt.event.ActionListener {
+  add_WS adaptee;
+
+  add_WS_jTextField_password_actionAdapter(add_WS adaptee) {
+    this.adaptee = adaptee;
+  }
+  public void actionPerformed(ActionEvent e) {
+    adaptee.jTextField_password_actionPerformed(e);
+  }
+}

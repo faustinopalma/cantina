@@ -1,0 +1,387 @@
+package distillatore;
+
+import java.util.*;
+import java.awt.*;
+import java.io.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali dall'output dei comandi show</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.0
+ */
+
+public class nodo {
+  TextArea messaggi = new TextArea();
+  public String nome = null;
+  public String identificativo = null;
+  public String link = "";
+  int indiceNodo;
+  public boolean fogliaSiNo = true;
+  public ArrayList contenuto = new ArrayList();
+  public ArrayList rami = new ArrayList();
+  public ArrayList collegamenti = new ArrayList();
+  public ArrayList collegamentiDial = new ArrayList();
+  public int quantità = 0;
+  public BufferedWriter uscita;
+  public String riferimento;
+  double centrality;
+  private class variabile {
+    public String nome = null;
+    public String valore = null;
+    public boolean visibile = true;
+    public boolean daConfrontare = true;
+    public variabile(String nome, String valore) {
+      this.nome = nome;
+      this.valore = valore;
+    }
+
+    public variabile(String nome, String valore, boolean daConfrontare) {
+      this.nome = nome;
+      this.valore = valore;
+      this.daConfrontare = daConfrontare;
+    }
+
+    public variabile(String nome, String valore, boolean daConfrontare,
+                     boolean visibile) {
+      this.nome = nome;
+      this.valore = valore;
+      this.daConfrontare = daConfrontare;
+      this.visibile = visibile;
+    }
+
+    public void visibile(boolean flag) {
+      visibile = flag;
+    }
+  }
+
+  public class Grappa {
+    public String LoopBackGestione = "";
+    public String CommunitySNMP = "";
+    public String RAM = "";
+    public String Flash = "";
+    public String TipoApparato = "";
+    public String SerialNumber = "";
+    public String Modello = "";
+    public String IOS = "";
+  }
+
+  public class Interfaccia {
+    public String name = "";
+    public String encapsulation = "";
+  }
+
+  ArrayList interfaccie = new ArrayList();
+  public void addInterfaccia(String name, String encapsulation) {
+    Interfaccia new_interfaccia = new Interfaccia();
+    new_interfaccia.name=name;
+    new_interfaccia.encapsulation=encapsulation;
+    interfaccie.add(new_interfaccia);
+  }
+
+  public Interfaccia interfaccia(int i) {
+    return (Interfaccia) interfaccie.get(i);
+  }
+
+  public Interfaccia interfaccia(String name) {
+    int i = 0;
+    boolean trovata = false;
+    while (!trovata && i < interfaccie.size()) {
+      trovata = interfaccia(i).name.compareTo(name) == 0;
+      //System.out.println(interfaccia(i).interfaceName+"  "+name);
+      i++;
+    }
+    i--;
+    if (trovata) {
+      return (Interfaccia) interfaccie.get(i);
+    }
+    else {
+      return null;
+    }
+  }
+
+  public void completaEncapsulation() {
+    for (int i = 0; i < collegamenti.size(); i++) {
+      int point;
+      if (collegamento(i).encapsulation.compareTo("") == 0 &&
+          (point = collegamento(i).interfaccia.indexOf(".")) != -1) {
+        System.out.println(collegamento(i).encapsulation);
+        try {
+          collegamento(i).encapsulation = interfaccia(collegamento(i).
+              interfaccia.substring(0, point)).encapsulation;
+        } catch (NullPointerException err) {
+          System.err.println(err);
+        }
+        System.out.println(collegamento(i).encapsulation);
+      }
+    }
+  }
+
+  Grappa grappa = new Grappa();
+
+  public nodo(String nome, TextArea messaggi) {
+    this.nome = nome;
+  }
+
+  public void aggiungiVariabile(String nome, String valore) {
+    contenuto.add(new variabile(nome, valore));
+  }
+
+  public void aggiungiVariabile(String nome, String valore, boolean confrontare) {
+    contenuto.add(new variabile(nome, valore, confrontare));
+  }
+
+  public void aggiungiVariabile(String nome, String valore, boolean confrontare,
+                                boolean visualizzare) {
+    contenuto.add(new variabile(nome, valore, confrontare, visualizzare));
+  }
+
+  public String nomeVariabile(int indice) {
+    return ( (variabile) contenuto.get(indice)).nome;
+  }
+
+  public String valoreVariabile(int indice) {
+    return ( (variabile) contenuto.get(indice)).valore;
+  }
+
+  public boolean variabileDaConfrontare(int indice) {
+    return ( (variabile) contenuto.get(indice)).daConfrontare;
+  }
+
+  public void aggiungiRamo(String nome) {
+    rami.add(new nodo(nome, messaggi));
+    fogliaSiNo = false;
+  }
+
+  public void aggiungiCollegamento(String interfaccia, String indirizzo,
+                                   String mask) {
+    collegamentoIP collegamento = new collegamentoIP(indirizzo, mask, messaggi);
+    collegamento.interfaccia = interfaccia;
+    collegamenti.add(collegamento);
+  }
+
+  public void aggiungiCollegamentoDial(String interfaccia, String indirizzo,
+                                       String mask) {
+    collegamentoIP collegamento = new collegamentoIP(indirizzo, mask, messaggi);
+    collegamento.interfaccia = interfaccia;
+    collegamentiDial.add(collegamento);
+  }
+
+//------------------------------------------------------------------------------
+  ArrayList Vectors = new ArrayList();
+  public class vector {
+    nodo nextHop;
+    double distance;
+  }
+
+  vector vector(int destination) {
+    return (vector) Vectors.get(destination);
+  }
+
+  void addVector(nodo nextHop, double distance) {
+    vector vector = new vector();
+    vector.nextHop = nextHop;
+    vector.distance = distance;
+    Vectors.add(vector);
+  }
+
+//------------------------------------------------------------------------------
+
+  public bidimensionale inTabella() {
+    bidimensionale tabella = new bidimensionale(messaggi);
+    int posizioneX = 0;
+    int posizioneY = 0;
+    tabella.aggiungiElemento(0, 0, nome);
+    for (int i = 0; i < contenuto.size(); i++) {
+      variabile elemento = (variabile) contenuto.get(i);
+      if (elemento.visibile) {
+        tabella.aggiungiElemento(i, 1, elemento.nome);
+        tabella.aggiungiElemento(i, 2, elemento.valore);
+      }
+    }
+    posizioneX += contenuto.size();
+    posizioneY += 1;
+    for (int i = 0; i < rami.size(); i++) {
+      nodo ramo = (nodo) rami.get(i);
+      bidimensionale tabellaRamo = ramo.inTabella();
+      tabella.aggiungiTabella(posizioneX, posizioneY, tabellaRamo);
+      posizioneX += tabellaRamo.dimensioneX + 1;
+    }
+    for (int i = 0; i < collegamenti.size(); i++) {
+      collegamentoIP collegamento = (collegamentoIP) collegamenti.get(i);
+      bidimensionale tabellaCollegamento = collegamento.inTabella();
+      tabella.aggiungiTabella(posizioneX, posizioneY, tabellaCollegamento);
+      posizioneX += tabellaCollegamento.dimensioneX + 1;
+    }
+    return tabella;
+  }
+
+  public void stampaHTML() {
+    try {
+      uscita.newLine();
+      uscita.write("<table border=\"1\"><tr>");
+      uscita.newLine();
+      if (link.compareTo("") != 0) {
+        uscita.write("<td valign=\"top\"><a name=\"" + identificativo +
+                     "\"></a><a href=\"" + link + "\">" + nome + "</a></td>");
+      }
+      else {
+        uscita.write("<td valign=\"top\"><a name=\"" + identificativo + "\">" +
+                     nome + "</a></td>");
+      }
+      uscita.newLine();
+
+      uscita.write("<td valign=\"top\"><table border=\"0\">");
+      uscita.newLine();
+
+      uscita.write("<tr><td valign=\"top\"><table border=\"1\">");
+      uscita.newLine();
+      for (int i = 0; i < contenuto.size(); i++) {
+        variabile elemento = (variabile) contenuto.get(i);
+        uscita.write("<tr>");
+        uscita.newLine();
+        if (elemento.visibile) {
+          uscita.write("<td valign=\"top\">" + elemento.nome + "</td>");
+          uscita.write("<td valign=\"top\">" + elemento.valore + "</td>");
+        }
+        uscita.newLine();
+        uscita.write("</tr>");
+        uscita.newLine();
+      }
+      uscita.write("</table></td></tr>");
+      uscita.newLine();
+
+      uscita.write("<tr><td valign=\"top\"><table border=\"1\">");
+      uscita.newLine();
+      for (int i = 0; i < rami.size(); i++) {
+        uscita.newLine();
+        uscita.write("<tr><td valign=\"top\"></td><td>");
+        nodo ramo = (nodo) rami.get(i);
+        ramo.stampaHTML(uscita);
+        uscita.newLine();
+        uscita.write("</td></tr>");
+      }
+      uscita.write("</table></td></tr>");
+      uscita.newLine();
+
+      uscita.write("<tr><td valign=\"top\">");
+      uscita.newLine();
+
+      for (int i = 0; i < collegamenti.size(); i++) {
+        collegamentoIP collegamento = (collegamentoIP) collegamenti.get(i);
+        collegamento.uscita = uscita;
+        collegamento.stampaHTML();
+      }
+      for (int i = 0; i < collegamentiDial.size(); i++) {
+        collegamentoIP collegamento = (collegamentoIP) collegamentiDial.get(i);
+        collegamento.uscita = uscita;
+        collegamento.stampaHTML();
+      }
+      uscita.write("</td></tr>");
+      uscita.newLine();
+
+      uscita.write("</table></td>");
+      uscita.newLine();
+      uscita.write("</tr></table>");
+    }
+    catch (IOException err) {}
+  }
+
+  public void stampaHTML(BufferedWriter uscita) {
+    try {
+      uscita.newLine();
+      uscita.write("<table border=\"1\"><tr>");
+      uscita.newLine();
+      if (link.compareTo("") != 0) {
+        uscita.write("<td valign=\"top\"><a name=\"" + identificativo +
+                     "\"></a><a href=\"" + link + "\">" + nome + "</a></td>");
+      }
+      else {
+        uscita.write("<td valign=\"top\"><a name=\"" + identificativo + "\">" +
+                     nome + "</a></td>");
+      }
+      uscita.newLine();
+
+      uscita.write("<td valign=\"top\"><table border=\"0\">");
+      uscita.newLine();
+
+      uscita.write("<tr><td valign=\"top\"><table border=\"1\">");
+      uscita.newLine();
+      for (int i = 0; i < contenuto.size(); i++) {
+        variabile elemento = (variabile) contenuto.get(i);
+        uscita.write("<tr>");
+        uscita.newLine();
+        if (elemento.visibile) {
+          uscita.write("<td valign=\"top\">" + elemento.nome + "</td>");
+          uscita.write("<td valign=\"top\">" + elemento.valore + "</td>");
+        }
+        uscita.newLine();
+        uscita.write("</tr>");
+        uscita.newLine();
+      }
+      uscita.write("</table></td></tr>");
+      uscita.newLine();
+
+      uscita.write("<tr><td valign=\"top\"><table border=\"1\">");
+      uscita.newLine();
+      for (int i = 0; i < rami.size(); i++) {
+        uscita.newLine();
+        uscita.write("<tr><td valign=\"top\"></td><td>");
+        nodo ramo = (nodo) rami.get(i);
+        ramo.stampaHTML(uscita);
+        uscita.newLine();
+        uscita.write("</td></tr>");
+      }
+      uscita.write("</table></td></tr>");
+      uscita.newLine();
+
+      uscita.write("<tr><td valign=\"top\">");
+      uscita.newLine();
+      for (int i = 0; i < collegamenti.size(); i++) {
+        collegamentoIP collegamento = (collegamentoIP) collegamenti.get(i);
+        collegamento.uscita = uscita;
+        collegamento.stampaHTML();
+      }
+      for (int i = 0; i < collegamentiDial.size(); i++) {
+        collegamentoIP collegamento = (collegamentoIP) collegamentiDial.get(i);
+        collegamento.uscita = uscita;
+        collegamento.stampaHTML();
+      }
+      uscita.write("</td></tr>");
+      uscita.newLine();
+
+      uscita.write("</table></td>");
+      uscita.newLine();
+      uscita.write("</tr></table>");
+      uscita.flush();
+    }
+    catch (IOException err) {}
+  }
+
+  public nodo ramo(int indice) {
+    return (nodo) rami.get(indice);
+  }
+
+  public collegamentoIP collegamento(int indice) {
+    return (collegamentoIP) collegamenti.get(indice);
+  }
+
+  public ArrayList collegamentoArrayList(String interfaccia) {
+    ArrayList risultato = new ArrayList();
+    collegamentoIP collegamentoCorrente;
+    for (int i = 0; i < collegamenti.size(); i++) {
+      collegamentoCorrente = (collegamentoIP) collegamenti.get(i);
+      if (collegamentoCorrente.interfaccia.compareTo(interfaccia) == 0) {
+        risultato.add(collegamentoCorrente);
+      }
+    }
+    return risultato;
+  }
+
+  public collegamentoIP collegamentoDial(int indice) {
+    return (collegamentoIP) collegamentiDial.get(indice);
+  }
+
+}

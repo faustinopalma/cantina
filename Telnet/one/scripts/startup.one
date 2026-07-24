@@ -1,0 +1,3 @@
+if active /User Emcee already running
+load -path /User one.radio.Emcee
+run /User

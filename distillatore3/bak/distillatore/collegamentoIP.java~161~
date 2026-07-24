@@ -1,0 +1,283 @@
+package distillatore;
+import java.lang.*;
+import java.util.*;
+import java.awt.*;
+import java.io.*;
+
+/**
+ * <p>Title: Distillatore</p>
+ * <p>Description: Distilla le informazioni essenziali contenute nei comandi Show dell'IOS</p>
+ * <p>Copyright: Copyright (c) 2002</p>
+ * <p>Company: Lutech SPA</p>
+ * @author Faustino Palma
+ * @version 1.1
+ */
+
+public class collegamentoIP {
+  public TextArea messaggi;
+  public BitSet indirizzo = new BitSet(32);
+  public BitSet mask = new BitSet(32);
+  public String interfaccia = "interfaccia";
+  public String tipoLink="";
+  public String encapsulation = null;
+  public String shutdown = null;
+  public String bandwidth = null;
+  public ArrayList vicini = new ArrayList();
+  public BufferedWriter uscita;
+  public int numeroVicini=0;
+  public String descrizione=null;
+  public boolean dial=false;
+  public int count_dial_num=0;
+  class vicino {
+    vicino riflesso;
+    String IPaddress;
+    String HostName;
+    String dialer_number="";
+    String identificativo;
+    String tipoLink="";
+    int indiceNodo;
+    nodo nodoObject;
+    collegamentoIP collegamentoVicino;
+    int indiceCollegamentoNodo;
+    boolean maskDiversa;
+    boolean IPduplicato;
+    boolean IPduplicatoLocale;
+  }
+  public class Grappa {
+    public String NomeCollegamento="";
+    public String TipoCollegamento="";
+    public String CIR="";
+    public String VPI="";
+    public String VCI="";
+    public String DLCI="";
+    public String ISDN="";
+  }
+  Grappa grappa = new Grappa();
+  public collegamentoIP(String indirizzo, String mask, TextArea messaggi) {
+    this.indirizzo = codifica(indirizzo);
+    this.mask = codifica(mask);
+    this.messaggi = messaggi;
+  }
+  public BitSet codifica(String valore) {
+    BitSet risultato = new BitSet(32);
+    try {
+      int aDot = valore.indexOf(".");
+      int bDot = valore.indexOf(".", aDot+1);
+      int cDot = valore.indexOf(".", bDot+1);
+      Integer a = new Integer(valore.substring(0,aDot));
+      Integer b = new Integer(valore.substring(aDot+1,bDot));
+      Integer c = new Integer(valore.substring(bDot+1,cDot));
+      Integer d = new Integer(valore.substring(cDot+1));
+      int A = a.intValue();
+      int B = b.intValue();
+      int C = c.intValue();
+      int D = d.intValue();
+      for (int i=0; i<8; i++) {
+        if (A%2==1) risultato.set(24+i);
+        A = A/2;
+      }
+      for (int i=0; i<8; i++) {
+        if (B%2==1) risultato.set(16+i);
+        B = B/2;
+      }
+      for (int i=0; i<8; i++) {
+        if (C%2==1) risultato.set(8+i);
+        C = C/2;
+      }
+      for (int i=0; i<8; i++) {
+        if (D%2==1) risultato.set(i);
+        D = D/2;
+      }
+    } catch (IndexOutOfBoundsException err) {messaggi.append("\nerrore nel metodo codifica di collegamento IP");}
+    return risultato;
+  }
+
+  public String decodifica(BitSet valore) {
+    String risultato = "";
+    for (int j=3; j>=0; j--) {
+      int A=0;
+      int p=1;
+      for (int i=0; i<8; i++) {
+        if (valore.get(i+j*8)) {
+          A=A+p;
+        }
+        p*=2;
+      }
+      //System.out.println(A);
+      risultato+=String.valueOf(A);
+      if (j!=0) risultato+=".";
+    }
+    return risultato;
+  }
+
+  public boolean confrontaCollegamenti(collegamentoIP indirizzoDue) {
+    boolean coincidono = true;
+    for (int i=31; i>=0; i--) {
+      if (mask.get(i))
+        if (indirizzo.get(i)!=indirizzoDue.indirizzo.get(i) )
+          coincidono=false;
+    }
+    return coincidono;
+  }
+
+  public boolean verificaMask(collegamentoIP indirizzoDue) {
+    boolean coincidono = true;
+    for (int i=31; i>=0; i--){
+      if (mask.get(i)!=indirizzoDue.mask.get(i) )
+        coincidono=false;
+    }
+    return coincidono;
+  }
+
+  public boolean uguale(collegamentoIP indirizzoDue) {
+    boolean coincidono = true;
+    for (int i=31; i>=0; i--){
+      if (indirizzo.get(i)!=indirizzoDue.indirizzo.get(i) )
+        coincidono=false;
+    }
+    for (int i=31; i>=0; i--){
+      if (mask.get(i)!=indirizzoDue.mask.get(i) )
+        coincidono=false;
+    }
+    return coincidono;
+  }
+
+  public boolean minore(collegamentoIP collegamentoDue) {
+    int discriminante = 32;
+    boolean discriminanteTrovato = false;
+    while ( !discriminanteTrovato&&(discriminante>0) ) {
+      discriminante--;
+      if (indirizzo.get(discriminante)!=collegamentoDue.indirizzo.get(discriminante))
+        discriminanteTrovato = true;
+    }
+    if (discriminanteTrovato) {
+      return !indirizzo.get(discriminante);
+    } else {
+      int discriminanteMask = 32;
+      boolean discriminanteTrovatoMask = false;
+      while ( !discriminanteTrovatoMask&&(discriminanteMask>0) ) {
+        discriminanteMask--;
+        if (mask.get(discriminanteMask)!=collegamentoDue.mask.get(discriminanteMask))
+          discriminanteTrovatoMask = true;
+      }
+      return !mask.get(discriminanteMask);
+    }
+  }
+
+//  public void aggiungiVicino(String HostName, String IPaddress, String identificativo, /*int indiceNodo, int indiceCollegamentoNodo,*/ boolean maskDiversa) {
+  public vicino ultimo_vicino() {
+    return vicino(vicini.size()-1);
+  }
+  public void aggiungiVicino(int ggg,nodo nodoObject, collegamentoIP collegamentoVicino, String HostName, String IPaddress, String identificativo, int indiceNodo,
+                             int indiceCollegamentoNodo, boolean maskDiversa, String tipoLink) {
+    vicino vicino = new vicino();
+    vicino.nodoObject=nodoObject;
+    vicino.collegamentoVicino=collegamentoVicino;
+    vicino.HostName = HostName;
+    vicino.IPaddress = IPaddress;
+    vicino.identificativo = identificativo;
+    vicino.maskDiversa = maskDiversa;
+    vicino.indiceNodo = indiceNodo;
+    vicino.indiceCollegamentoNodo = indiceCollegamentoNodo;
+    vicino.tipoLink=tipoLink;
+    for (int i=0; i<vicini.size(); i++) {
+      vicino vicinoCorrente = (vicino)vicini.get(i);
+      if (vicinoCorrente.IPaddress.compareTo(vicino.IPaddress)==0) {
+        if (vicinoCorrente.identificativo.compareTo(vicino.identificativo)==0) {
+          vicino.IPduplicatoLocale=true;
+          vicinoCorrente.IPduplicatoLocale=true;
+        } else {
+          vicino.IPduplicato=true;
+          vicinoCorrente.IPduplicato=true;
+        }
+      }
+    }
+    vicini.add(vicino);
+    numeroVicini++;
+  }
+
+  public vicino vicino(int indice) {
+    return (vicino) vicini.get(indice);
+  }
+
+  public String indirizzo() {
+    return decodifica(indirizzo);
+  }
+
+  public String mask() {
+    return decodifica(mask);
+  }
+
+  public bidimensionale inTabella() {
+    bidimensionale tabella = new bidimensionale(messaggi);
+    tabella.aggiungiElemento(0, 0, interfaccia);
+    tabella.aggiungiElemento(0, 1, decodifica(indirizzo));
+    tabella.aggiungiElemento(0, 2, decodifica(mask));
+    for (int i = 0; i < vicini.size(); i++) {
+      vicino vicino = (vicino) vicini.get(i);
+      tabella.aggiungiElemento(i, 3, vicino.HostName);
+      tabella.aggiungiElemento(i, 4, vicino.IPaddress);
+    }
+    return tabella;
+  }
+
+  public String barraMask() {
+    int barra = 0;
+    while ( (barra<32) && mask.get(31-barra) ) {
+        barra++;
+    }
+    return "/"+String.valueOf(barra);
+  }
+
+  public void stampaHTML() {
+  try {
+    uscita.write("<table border=\"0\"><tr>");
+    uscita.newLine();
+    uscita.newLine();
+    if (descrizione!=null)
+      uscita.write("<td>"+descrizione+"<td></tr><tr>");
+    uscita.write("<td valign=\"top\">"+interfaccia+"</td>"
+                +"<td valign=\"top\">"+decodifica(indirizzo)+"</td>"
+                +"<td valign=\"top\">"+decodifica(mask)+"</td>");
+    if (encapsulation!=null&&encapsulation!="") {
+      uscita.newLine();
+      uscita.write("<td valign=\"top\">"+encapsulation+"</td>");
+    }
+    if (bandwidth!=null&&bandwidth!="") {
+      uscita.newLine();
+      uscita.write("<td valign=\"top\">BW:"+bandwidth+"</td>");
+      /*
+      Integer BW = new Integer(bandwidth);
+      if (BW.intValue()<64) {
+        uscita.write("<td valign=\"top\">TroppoBassa</td>");
+      }
+      */
+    }
+    if (shutdown!=null&&shutdown!="") {
+      uscita.newLine();
+      uscita.write("<td valign=\"top\">"+shutdown+"</td>");
+    }
+    uscita.newLine();
+    uscita.write("<td valign=\"top\"><table border=\"0\">");
+    for (int i = 0; i < vicini.size(); i++) {
+      vicino vicino = (vicino) vicini.get(i);
+      uscita.newLine();
+      uscita.write("<tr>");
+      uscita.write("<td valign=\"top\"><a href=\""+vicino.identificativo+".html"+"\">"+vicino.HostName+"</a></td>"+
+                       "<td valign=\"top\">"+vicino.dialer_number+"</td>"+
+                       "<td valign=\"top\">"+vicino.IPaddress+"</td>");
+      if (vicino.maskDiversa) uscita.write("<td valign=\"top\">ErrMaskDiversa</td>");
+      if (vicino.IPduplicato) uscita.write("<td valign=\"top\">ErrIPduplicato</td>");
+      if (vicino.IPduplicatoLocale) uscita.write("<td valign=\"top\">ErrIPduplicatoLocale</td>");
+      uscita.write("<tr>");
+    }
+
+    uscita.newLine();
+    uscita.write("</table></td>");
+    uscita.newLine();
+    uscita.write("</tr></table>");
+    uscita.newLine();
+    uscita.flush();
+  } catch (IOException err) {}
+  }
+}
