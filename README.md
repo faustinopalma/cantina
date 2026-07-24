@@ -6,9 +6,9 @@
 
 # Cantina — Network Configuration Assessment Toolchain
 
-A small suite of Java tools, written in the early 2000s (the source files carry a
-2002 copyright), built to **automate the quality assessment of large corporate
-networks**. The project name and its modules borrow terminology from
+A small suite of Java tools, written in 2002, built to **automate the quality
+assessment of large corporate networks**. The project name and its modules borrow
+terminology from
 winemaking, because the pipeline mirrors the way grapes become a finished
 spirit: you harvest the raw material, you distil it, and you obtain something
 refined and ready to be tasted by an expert.
@@ -179,9 +179,9 @@ project rather than as a maintained product.
 
 # Italiano
 
-Una piccola suite di strumenti Java, scritta all'inizio degli anni 2000 (i file
-sorgente riportano un copyright del 2002), realizzata per **automatizzare la
-valutazione di qualità di grandi reti aziendali**. Il nome del progetto e dei
+Una piccola suite di strumenti Java, scritta nel 2002, realizzata per
+**automatizzare la valutazione di qualità di grandi reti aziendali**. Il nome del
+progetto e dei
 suoi moduli prende in prestito la terminologia della vinificazione, perché la
 pipeline ricalca il modo in cui l'uva diventa un distillato finito: si raccoglie
 la materia prima, la si distilla e si ottiene qualcosa di raffinato, pronto per
