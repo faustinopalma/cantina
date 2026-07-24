@@ -120,8 +120,8 @@ distinct clusters that emerged, making mistakes far easier to spot.
   │  (telnet,     │ vinaccia │  (regex parsing, │  graph   │  (centrality, │
   │   discovery)  │  (files) │   clustering)    │          │   SVG output) │
   └───────────────┘          └──────────────────┘          └───────────────┘
-                                     │ grappa
-                                     ▼
+                                       │ grappa
+                                       ▼
                               HTML / text reports
 ```
 
@@ -297,8 +297,8 @@ rendendo molto più facile individuare gli errori.
   │  (telnet,     │ vinaccia │  (parsing regex, │  grafo   │  (centralità, │
   │   discovery)  │  (file)  │   clustering)    │          │   output SVG) │
   └───────────────┘          └──────────────────┘          └───────────────┘
-                                     │ grappa
-                                     ▼
+                                       │ grappa
+                                       ▼
                               report HTML / testo
 ```
 
