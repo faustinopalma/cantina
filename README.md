@@ -115,13 +115,13 @@ distinct clusters that emerged, making mistakes far easier to spot.
 
 ```
   HARVEST                    DISTIL                         VISUALISE
-  ┌───────────────┐          ┌──────────────────┐          ┌───────────────┐
-  │ vendemmiatore │  ─────▶  │   distillatore   │  ─────▶  │   Topology    │
-  │  (telnet,     │ vinaccia │  (regex parsing, │  graph   │  (centrality, │
-  │   discovery)  │  (files) │   clustering)    │          │   SVG output) │
-  └───────────────┘          └──────────────────┘          └───────────────┘
-                                       │ grappa
-                                       ▼
+  +---------------+          +------------------+          +---------------+
+  | vendemmiatore |  ----->  |   distillatore   |  ----->  |   Topology    |
+  |  (telnet,     | vinaccia |  (regex parsing, |  graph   |  (centrality, |
+  |   discovery)  |  (files) |   clustering)    |          |   SVG output) |
+  +---------------+          +------------------+          +---------------+
+                                       | grappa
+                                       v
                               HTML / text reports
 ```
 
@@ -292,13 +292,13 @@ rendendo molto più facile individuare gli errori.
 
 ```
   RACCOLTA                   DISTILLAZIONE                  VISUALIZZAZIONE
-  ┌───────────────┐          ┌──────────────────┐          ┌───────────────┐
-  │ vendemmiatore │  ─────▶  │   distillatore   │  ─────▶  │   Topology    │
-  │  (telnet,     │ vinaccia │  (parsing regex, │  grafo   │  (centralità, │
-  │   discovery)  │  (file)  │   clustering)    │          │   output SVG) │
-  └───────────────┘          └──────────────────┘          └───────────────┘
-                                       │ grappa
-                                       ▼
+  +---------------+          +------------------+          +---------------+
+  | vendemmiatore |  ----->  |   distillatore   |  ----->  |   Topology    |
+  |  (telnet,     | vinaccia |  (parsing regex, |  grafo   |  (centralità, |
+  |   discovery)  |  (file)  |   clustering)    |          |   output SVG) |
+  +---------------+          +------------------+          +---------------+
+                                       | grappa
+                                       v
                               report HTML / testo
 ```
 
