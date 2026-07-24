@@ -20,59 +20,60 @@ An interactive, bilingual overview of the architecture is available in
 
 ## The story
 
-Back then I was working as a network engineer for a system-integration and
-consulting company. Together with a team of engineers, I was assigned to a large
-project for a major telecommunications operator. Several companies had been
-enrolled for the same job, so a handful of teams were effectively competing
-against each other, measured on speed and quality. Whoever performed best would
-keep the contract.
+Back then I was a young network engineer at a system-integration and consulting
+company, part of a team assigned to a large project for a major telecommunications
+operator. Several companies had been brought in for the same work, so a handful of
+teams ended up doing very similar things in parallel, measured on speed and
+quality. There was a friendly, if real, sense of competition in the air.
 
-The task itself was clear, and repetitive: sit in front of a terminal all day
-and, one device at a time, connect to each router in a client network through a
-text-based interface, download its configuration, run a fixed sequence of
-diagnostic commands, read the output, and spot any configuration mistake. The
-final deliverable was a report listing the defects found across the network. The
-work was entirely individual and required no human interaction.
+The task was clear and, honestly, quite tedious: sit at a terminal and, one device
+at a time, connect to each router in a client network through a text-based
+interface, download its configuration, run a fixed sequence of diagnostic commands,
+read the output, and look for configuration mistakes. The deliverable was a report
+listing the defects found across the network — careful, patient, and almost entirely
+manual work.
 
-Many people considered automating it, but almost nobody believed it was
-feasible: the configurations were plain, amorphous text written in a rich,
-exception-heavy device language. Two configuration files were rarely identical —
-different IP addressing, different firmware versions, and the fact that the same
-behaviour could be expressed in slightly different ways.
+The idea of automating it came up more than once, but most of us (myself included at
+first) assumed it wasn't really practical: the configurations were plain, amorphous
+text in a rich device language full of exceptions. Two files were rarely identical —
+different IP addressing, different firmware versions, and the same behaviour often
+written in slightly different ways.
 
-### A bold decision
+### Taking a chance
 
-I had no software-development experience, but I was convinced that the tedious
-part of the job could be automated, leaving the engineer free to add the
-high-level judgement that really mattered. My idea was a tool that would produce
-a **semi-finished report** — a solid starting point an engineer could complete
-with insight and context.
+I had no real software experience, but I kept wondering whether at least the tedious
+part could be handled by a program, leaving the engineer free to add the judgement
+that actually mattered. The goal wasn't a magic button — just a tool that produced a
+**semi-finished report**, a decent starting point someone could refine with insight
+and context.
 
-A friend who was an experienced programmer recommended Java. I studied it,
-proposed the plan to management, and committed to delivering a working tool in
-six weeks. I asked to build it instead of doing the manual job, and to be given
-a small cross-company team. The client sponsor and my management supported the
-idea, though only one of the other companies believed enough to lend a person.
+A friend who actually knew how to program suggested I learn Java. I gave it a try,
+sketched out a plan, and asked management whether I could build the tool instead of
+doing the manual job, ideally with a small cross-company team. Looking back, it was a
+bit of a leap of faith on everyone's part: the client sponsor and my managers decided
+to trust the idea, even though only one of the other companies was willing to lend a
+hand.
 
-### During the build
+### Building it
 
-The very first thing I did was order a Java book — before I even had the formal
-green light — because international shipping to Italy took about a week at the
-time.
+The first thing I did was order a Java book — before I even had the formal go-ahead —
+since international shipping to Italy took about a week back then, and I didn't want to
+lose the time.
 
-After a series of meetings with colleagues and the client to shape the
-architecture, I worked on the solution day and night. The effort was split: a
-colleague took the **connection module**, while I built the **analysis and
-output module**. Within three weeks the analysis part was already crunching a
-small sample of configuration files, and I handed the first release to the team.
-It was buggy, limited, and rough — but it proved the concept, and I was allowed
-to continue.
+After some meetings with colleagues and the client to shape the design, I spent a lot
+of long evenings on it, more out of enthusiasm than heroism. We split the work: a
+colleague took the **connection module**, and I worked on the **analysis and output
+module**. Within a few weeks the analysis part could already chew through a small
+sample of configuration files, so I shared an early release with the team. It was
+buggy, limited, and rough, but it was enough to show the idea could work — and that
+was enough to keep going.
 
-The connection module, unfortunately, was not working, and my partner stepped
-away from his part. I took over his component as well. A viable release,
-including the connection module, was ready in about seven weeks — only slightly
-later than promised. From there the team started using it daily, reporting bugs
-and, increasingly, helping to improve it.
+The connection module turned out to be the harder problem, and in the end my colleague
+decided to step away from it. I picked up that part too, and with plenty of trial and
+error a usable release — connection module included — came together in about seven
+weeks, a little later than I'd hoped. What made the real difference from there was the
+team: they used it every day, reported bugs, and gradually helped turn it into
+something genuinely useful.
 
 ---
 
@@ -193,61 +194,60 @@ Una panoramica interattiva e bilingue dell'architettura è disponibile in
 
 ## La storia
 
-All'epoca lavoravo come ingegnere di rete per una società di system integration
-e consulenza. Insieme a un gruppo di ingegneri, fui assegnato a un grande
-progetto per un importante operatore di telecomunicazioni. Diverse aziende erano
-state coinvolte per lo stesso lavoro, così alcuni team si trovavano di fatto in
-competizione tra loro, misurati su velocità e qualità. Chi avesse ottenuto i
-risultati migliori avrebbe mantenuto il contratto.
+All'epoca ero un giovane ingegnere di rete in una società di system integration e
+consulenza, parte di un team assegnato a un grande progetto per un importante
+operatore di telecomunicazioni. Diverse aziende erano state coinvolte per lo stesso
+lavoro, così alcuni team finivano per fare cose molto simili in parallelo, misurati
+su velocità e qualità. Nell'aria c'era una competizione, amichevole ma reale.
 
-Il compito era chiaro e ripetitivo: stare davanti a un terminale tutto il giorno
-e, un dispositivo alla volta, connettersi a ciascun router della rete di un
-cliente tramite un'interfaccia testuale, scaricarne la configurazione, eseguire
-una sequenza fissa di comandi diagnostici, leggere l'output e individuare ogni
-errore di configurazione. Il risultato finale era un report che elencava i
-difetti trovati nella rete. Il lavoro era del tutto individuale e non richiedeva
-alcuna interazione umana.
+Il compito era chiaro e, va detto, piuttosto noioso: sedersi a un terminale e, un
+dispositivo alla volta, connettersi a ciascun router della rete di un cliente
+tramite un'interfaccia testuale, scaricarne la configurazione, eseguire una sequenza
+fissa di comandi diagnostici, leggere l'output e cercare gli errori di
+configurazione. Il risultato era un report con i difetti trovati nella rete — un
+lavoro attento, paziente e quasi del tutto manuale.
 
-In molti pensarono di automatizzarlo, ma quasi nessuno lo riteneva possibile: le
-configurazioni erano testo amorfo, scritto in un linguaggio di dispositivo
-ricco e pieno di eccezioni. Due file di configurazione erano raramente identici:
-indirizzamenti IP diversi, versioni di firmware diverse e il fatto che lo stesso
-comportamento potesse essere espresso in modi leggermente differenti.
+L'idea di automatizzarlo era venuta più di una volta, ma quasi tutti (all'inizio me
+compreso) la ritenevano poco praticabile: le configurazioni erano testo amorfo, in un
+linguaggio di dispositivo ricco e pieno di eccezioni. Due file erano raramente
+identici: indirizzamenti IP diversi, versioni di firmware diverse e lo stesso
+comportamento spesso scritto in modi leggermente differenti.
 
-### Una decisione coraggiosa
+### Un salto nel buio
 
-Non avevo esperienza di sviluppo software, ma ero convinto che la parte noiosa
-del lavoro potesse essere automatizzata, lasciando all'ingegnere il compito di
-aggiungere il giudizio di alto livello che davvero contava. La mia idea era uno
-strumento capace di produrre un **report semilavorato**: un solido punto di
-partenza che un ingegnere avrebbe potuto completare con analisi e contesto.
+Non avevo una vera esperienza di sviluppo, ma continuavo a chiedermi se almeno la
+parte noiosa potesse essere gestita da un programma, lasciando all'ingegnere il
+giudizio che davvero contava. L'obiettivo non era un pulsante magico: solo uno
+strumento capace di produrre un **report semilavorato**, un punto di partenza decente
+da rifinire con analisi e contesto.
 
-Un amico programmatore esperto mi consigliò Java. Lo studiai, presentai il piano
-al management e mi impegnai a consegnare uno strumento funzionante in sei
-settimane. Chiesi di svilupparlo al posto del lavoro manuale e di avere un
-piccolo team tra le aziende coinvolte. Lo sponsor lato cliente e il mio
-management sostennero l'idea, anche se solo una delle altre aziende ci credette
-abbastanza da mettere a disposizione una persona.
+Un amico che sapeva davvero programmare mi suggerì di imparare Java. Ci provai,
+buttai giù un piano e chiesi al management se potevo costruire lo strumento al posto
+del lavoro manuale, possibilmente con un piccolo team tra le aziende coinvolte. Col
+senno di poi fu un piccolo atto di fiducia da parte di tutti: lo sponsor lato cliente
+e i miei responsabili scelsero di credere nell'idea, anche se solo una delle altre
+aziende fu disposta a dare una mano.
 
-### Durante lo sviluppo
+### La realizzazione
 
-La primissima cosa che feci fu ordinare un libro su Java — prima ancora di avere
-il via libera formale — perché all'epoca la spedizione internazionale verso
-l'Italia richiedeva circa una settimana.
+La prima cosa che feci fu ordinare un libro su Java — prima ancora del via libera
+formale — perché all'epoca la spedizione dall'estero verso l'Italia richiedeva circa
+una settimana e non volevo perdere tempo.
 
-Dopo una serie di incontri con colleghi e cliente per definire l'architettura,
-lavorai alla soluzione giorno e notte. L'impegno fu diviso: un collega prese in
-carico il **modulo di connessione**, mentre io costruivo il **modulo di analisi
-e output**. In tre settimane la parte di analisi elaborava già un piccolo
-campione di file di configurazione, e consegnai la prima release al team. Era
-piena di bug, limitata e grezza, ma dimostrava che il concetto funzionava, e mi
-fu permesso di proseguire.
+Dopo qualche incontro con colleghi e cliente per definire l'impostazione, ci passai
+molte serate lunghe, più per entusiasmo che per eroismo. Ci dividemmo il lavoro: un
+collega prese il **modulo di connessione** e io mi occupai del **modulo di analisi e
+output**. In poche settimane la parte di analisi riusciva già a elaborare un piccolo
+campione di file, così condivisi una prima release con il team. Era piena di bug,
+limitata e grezza, ma bastava a mostrare che l'idea poteva funzionare — e tanto
+bastava per andare avanti.
 
-Il modulo di connessione, purtroppo, non funzionava, e il mio collega si tirò
-indietro dalla sua parte. Presi in carico anche il suo componente. Una release
-utilizzabile, modulo di connessione incluso, fu pronta in circa sette settimane:
-solo poco più tardi di quanto promesso. Da lì il team iniziò a usarla ogni
-giorno, segnalando bug e, sempre di più, contribuendo a migliorarla.
+Il modulo di connessione si rivelò il problema più difficile e alla fine il collega
+decise di lasciarlo. Presi in carico anche quella parte e, con parecchi tentativi ed
+errori, una release utilizzabile — modulo di connessione incluso — prese forma in
+circa sette settimane, un po' più tardi di quanto speravo. A fare la differenza da lì
+in poi fu il team: la usavano ogni giorno, segnalavano bug e, poco alla volta,
+aiutarono a trasformarla in qualcosa di davvero utile.
 
 ---
 
